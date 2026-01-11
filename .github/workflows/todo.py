@@ -24,7 +24,7 @@ def getInfoAbtLine(fileName, lineNumber):
     counter=1
     for commit,lines in blame:
         if counter+len(lines)>lineNumber:
-            return f"({commit.author.name} {markdown_link(commit.hexsha[:7],'https://github.com/Brown-County-FIRST-Robotics/1716-2025-robot/commit/'+commit.hexsha)})"
+            return f"({commit.author.name} {markdown_link(commit.hexsha[:7],'https://github.com/Brown-County-FIRST-Robotics/1716-2026-robot/commit/'+commit.hexsha)})"
         counter+=len(lines)
     return "failed"
 
@@ -34,7 +34,7 @@ def getContextForLine(fileName, lineNumber):
         return markdown_codeblock("\n".join(content[max(0,lineNumber-2):min(len(content),lineNumber+2)]))
 
 def getLinkForLine(text,fileName, lineNumber):
-    return markdown_link(text, f"https://github.com/Brown-County-FIRST-Robotics/1716-2025-robot/blob/{git.Repo(".").active_branch.name}/{fileName}/#L{lineNumber}")
+    return markdown_link(text, f"https://github.com/Brown-County-FIRST-Robotics/1716-2026-robot/blob/{git.Repo(".").active_branch.name}/{fileName}/#L{lineNumber}")
 
 def getTODOS():
     pattern = re.compile('TO' + 'DO:', re.IGNORECASE)

@@ -17,4 +17,4 @@ jobs:
     - name: Real Pull
       run: git fetch --unshallow
     - name: make issue
-      run: python3 .github/workflows/todo.py --repo Brown-County-FIRST-Robotics/1716-2025-robot --token ${{ secrets.GITHUB_TOKEN }}
+      run: python3 .github/workflows/todo.py --repo Brown-County-FIRST-Robotics/1716-2026-robot --token ${{ secrets.GITHUB_TOKEN }}
