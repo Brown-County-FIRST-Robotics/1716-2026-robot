@@ -337,7 +337,7 @@ bin/
 
 ### WPILib ###
 
-# Simulation GUI and other tools window save file
+# Simulation GUI and other tools window save f file
 networktables.json
 simgui.json
 *-window.json
