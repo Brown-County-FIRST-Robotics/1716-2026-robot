@@ -20,11 +20,8 @@ import frc.robot.commands.TeleopDrive;
 import frc.robot.subsystems.IMUIO;
 import frc.robot.subsystems.IMUIONavx;
 import frc.robot.subsystems.IMUIOSim;
+import frc.robot.subsystems.swerve.*;
 import frc.robot.subsystems.swerve.Module;
-import frc.robot.subsystems.swerve.ModuleIO;
-import frc.robot.subsystems.swerve.ModuleIOSim;
-import frc.robot.subsystems.swerve.ModuleIOSparkFX;
-import frc.robot.subsystems.swerve.SwerveDrivetrain;
 import frc.robot.subsystems.vision.*;
 import frc.robot.utils.buttonbox.ButtonBox;
 import frc.robot.utils.buttonbox.ManipulatorPanel;
@@ -55,10 +52,10 @@ public class RobotContainer {
         case SWERVEBASE:
           driveSys =
               new SwerveDrivetrain(
-                  new Module(new ModuleIOSparkFX(24, 29, "FL"), 0),
-                  new Module(new ModuleIOSparkFX(23, 19, "FR"), 1),
-                  new Module(new ModuleIOSparkFX(20, 40, "BL"), 2),
-                  new Module(new ModuleIOSparkFX(22, 9, "BR"), 3),
+                  new Module(new ModuleIOKrakens(6, 5, 12, "FL"), 0),
+                  new Module(new ModuleIOKrakens(7, 8, 13, "FR"), 1),
+                  new Module(new ModuleIOKrakens(4, 3, 11, "BL"), 2),
+                  new Module(new ModuleIOKrakens(1, 2, 10, "BR"), 3),
                   new IMUIONavx());
           var vision =
               new FusedVision(

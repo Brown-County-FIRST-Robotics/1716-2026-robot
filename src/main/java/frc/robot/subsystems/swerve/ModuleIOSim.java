@@ -27,12 +27,9 @@ public class ModuleIOSim implements ModuleIO {
   @Override
   public void updateInputs(ModuleIOInputs inputs) {
     inputs.absSensorOmega = -SwerveSimManager.getInstance().getSteerVel(index);
-    inputs.relativeSensorOmega = SwerveSimManager.getInstance().getSteerVel(index);
     inputs.offset = chassisOffsets[index].getRotations();
     inputs.absSensorAngle =
         SwerveSimManager.getInstance().getModPos(index).angle.unaryMinus().getRotations();
-    inputs.relativeSensorAngle =
-        SwerveSimManager.getInstance().getModPos(index).angle.getRotations();
     inputs.thrustPos = SwerveSimManager.getInstance().getModPos(index).distanceMeters;
     inputs.thrustVel = SwerveSimManager.getInstance().getModState(index).speedMetersPerSecond;
   }

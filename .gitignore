@@ -357,3 +357,9 @@ compile_commands.json
 
 
 .idea
+simgui*.json
+
+
+src/main/deploy/git_tag.txt
+src/main/deploy/deployer.txt
+SimLogs/

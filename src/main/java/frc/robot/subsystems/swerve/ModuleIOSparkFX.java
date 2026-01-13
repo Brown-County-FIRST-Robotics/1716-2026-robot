@@ -163,8 +163,6 @@ public class ModuleIOSparkFX implements ModuleIO {
     BaseStatusSignal.refreshAll(velSignal, posSignal, errSignal, tempSignal, outputSignal);
     inputs.absSensorAngle = absoluteEncoder.getPosition();
     inputs.absSensorOmega = absoluteEncoder.getVelocity();
-    inputs.relativeSensorAngle = relativeEncoder.getPosition() / STEER_GEAR_RATIO;
-    inputs.relativeSensorOmega = relativeEncoder.getVelocity() / 60.0;
     inputs.thrustVel = velSignal.getValue().in(Units.RotationsPerSecond) * THRUST_DISTANCE_PER_TICK;
     inputs.thrustPos = posSignal.getValue().in(Units.Rotations) * THRUST_DISTANCE_PER_TICK;
     inputs.steerTempC = steer.getMotorTemperature();

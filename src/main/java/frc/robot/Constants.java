@@ -21,7 +21,7 @@ public final class Constants {
   /** Constants relating to manual operation */
   public static final class Driver {
     /** The maximum lateral velocity during manual operation in m/s */
-    public static final double MAX_SPEED = 6.0;
+    public static final double MAX_SPEED = 100 * .0254 * 4.0 * Math.PI / 5.36;
     /** The maximum angular velocity during manual operation in rad/s */
     public static final double MAX_THETA_SPEED = 9;
     /** The maximum acceleration in m/s^2 (does not include deceleration) */

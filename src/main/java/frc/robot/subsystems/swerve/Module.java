@@ -3,24 +3,17 @@ package frc.robot.subsystems.swerve;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import frc.robot.utils.CustomAlerts;
-import frc.robot.utils.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
 
 /** A class representing a single Swerve module */
 public class Module {
-  private static final LoggedTunableNumber minNoMotionTime =
-      new LoggedTunableNumber("Min no motion time", 5);
-  private static final LoggedTunableNumber maxMotionAllowed =
-      new LoggedTunableNumber("Max motion", 0.005);
   final ModuleIOInputsAutoLogged inputs = new ModuleIOInputsAutoLogged();
   final ModuleIO io;
   final int ind;
   String name;
   Rotation2d chassisOffset;
-  Rotation2d relativeSensorZeroPosition = new Rotation2d();
   final Timer noMotionTimer = new Timer();
 
   public static class CANAddress { // Forward compatibility with 2027
@@ -102,45 +95,21 @@ public class Module {
     CustomAlerts.makeOverTempAlert(() -> inputs.thrustTempC, 80, 70, name + " thrust motor");
 
     periodic();
-    reZero();
   }
 
   /** Periodic functionality. Call every tick. */
   public void periodic() {
     io.updateInputs(inputs);
     Logger.processInputs("Drive/" + name + "_Inputs", inputs);
-    if (Math.abs(inputs.absSensorOmega) > maxMotionAllowed.get()
-        || Math.abs(inputs.relativeSensorOmega) > maxMotionAllowed.get()) {
-      noMotionTimer.restart();
-    }
-    if (noMotionTimer.hasElapsed(minNoMotionTime.get()) && DriverStation.isDisabled()) {
-      reZero();
-    }
   }
 
-  private void reZero() {
-    Logger.recordOutput(
-        "Drive/" + name + "/relative_encoder_drift",
-        getAbsEncoderPos().minus(getProcessedRelativeEncoderPos()).getDegrees());
-    relativeSensorZeroPosition = getAbsEncoderPos().minus(getUnprocessedRelativeEncoderPos());
-    noMotionTimer.restart();
-  }
-
-  private Rotation2d getProcessedRelativeEncoderPos() {
-    return relativeSensorZeroPosition.plus(getUnprocessedRelativeEncoderPos());
-  }
-
-  private Rotation2d getUnprocessedRelativeEncoderPos() {
-    return Rotation2d.fromRotations(inputs.relativeSensorAngle);
-  }
-
-  private Rotation2d getAbsEncoderPos() {
+  private Rotation2d getEncoderPos() {
     return Rotation2d.fromRotations(inputs.absSensorAngle)
         .minus(Rotation2d.fromRotations(inputs.offset));
   }
 
   private Rotation2d getChassisRelativeRotation() {
-    return getProcessedRelativeEncoderPos().minus(chassisOffset);
+    return getEncoderPos().minus(chassisOffset);
   }
 
   /**
@@ -167,23 +136,13 @@ public class Module {
    * @param state The command state
    */
   public void setState(SwerveModuleState state) {
+    System.out.println(state);
     state.optimize(getChassisRelativeRotation());
     state.speedMetersPerSecond *= getChassisRelativeRotation().minus(state.angle).getCos();
     Rotation2d cmdPosForRelativeEncoder =
-        state.angle.plus(chassisOffset).minus(relativeSensorZeroPosition);
-    double adjustedRelCmd =
-        inputs.relativeSensorAngle
-            - (inputs.relativeSensorAngle % 1.0)
-            + cmdPosForRelativeEncoder.getRotations();
-    if (Math.abs(adjustedRelCmd - inputs.relativeSensorAngle)
-        > Math.abs(1.0 + adjustedRelCmd - inputs.relativeSensorAngle)) {
-      adjustedRelCmd += 1.0;
-    }
-    if (Math.abs(adjustedRelCmd - inputs.relativeSensorAngle)
-        > Math.abs(-1.0 + adjustedRelCmd - inputs.relativeSensorAngle)) {
-      adjustedRelCmd -= 1.0;
-    }
+        state.angle.plus(chassisOffset).plus(Rotation2d.fromRotations(inputs.offset));
+    Logger.recordOutput("SMOUT_" + name, cmdPosForRelativeEncoder);
 
-    io.setCmdState(adjustedRelCmd, state.speedMetersPerSecond);
+    io.setCmdState(cmdPosForRelativeEncoder.getRotations(), state.speedMetersPerSecond);
   }
 }

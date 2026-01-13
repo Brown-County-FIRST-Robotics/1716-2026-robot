@@ -11,10 +11,6 @@ public interface ModuleIO {
     public double thrustVel = 0.0;
     /** The thrust encoder position */
     public double thrustPos = 0.0;
-    /** The angle of the steering according to the relative encoder in rotations */
-    public double relativeSensorAngle = 0.0;
-    /** The angular velocity of the steer motor according to the relative encoder */
-    public double relativeSensorOmega = 0.0;
     /** The output of the thrust motor */
     public double thrustOutput = 0.0;
     /** The angular velocity of the steer motor according to the encoder on the wheel shaft */
