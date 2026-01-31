@@ -10,6 +10,6 @@ public class Quest implements Subsystem {
   @Override
   public void periodic() {
     io.updateInputs(inputs);
-    Logger.processInputs("Quest",inputs);
+    Logger.processInputs("Quest", inputs);
   }
 }
