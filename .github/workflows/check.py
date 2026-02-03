@@ -3,7 +3,7 @@ import os
 
 
 def check():
-    pattern = re.compile(r'(//|#)[\s]*(END\s)?T' + 'EMP', re.IGNORECASE)
+    pattern = re.compile(r'(//|#)[\s]*(END\s)?T' + 'EMP(\s|\n)', re.IGNORECASE)
     # Iterate over the files in the current directory and its subdirectories
     res={}
     for dirpath, dirnames, filenames in os.walk('.'):

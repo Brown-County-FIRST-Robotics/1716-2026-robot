@@ -1,234 +1,172 @@
-// Copyright (c) FIRST and other WPILib contributors.
-
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
+// Copyright (c) 2021-2026 Littleton Robotics
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by a BSD
+// license that can be found in the LICENSE file
+// at the root directory of this project.
 
 package frc.robot;
 
-import choreo.auto.AutoFactory;
-import choreo.auto.AutoRoutine;
-import choreo.auto.AutoTrajectory;
+import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform3d;
-import edu.wpi.first.math.geometry.Translation3d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import frc.robot.commands.TeleopDrive;
-import frc.robot.subsystems.IMUIO;
-import frc.robot.subsystems.IMUIONavx;
-import frc.robot.subsystems.IMUIOSim;
-import frc.robot.subsystems.swerve.*;
-import frc.robot.subsystems.swerve.Module;
-import frc.robot.subsystems.vision.*;
-import frc.robot.utils.buttonbox.ButtonBox;
-import frc.robot.utils.buttonbox.ManipulatorPanel;
-import frc.robot.utils.buttonbox.OverridePanel;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.commands.DriveCommands;
+import frc.robot.generated.TunerConstants;
+import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.drive.GyroIO;
+import frc.robot.subsystems.drive.GyroIOPigeon2;
+import frc.robot.subsystems.drive.ModuleIO;
+import frc.robot.subsystems.drive.ModuleIOSim;
+import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
+/**
+ * This class is where the bulk of the robot should be declared. Since Command-based is a
+ * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
+ * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
+ * subsystems, commands, and button mappings) should be declared here.
+ */
 public class RobotContainer {
-  private final CommandXboxController driverController = new CommandXboxController(0);
-  private final ButtonBox buttonBox = new ButtonBox(2);
-  private final ManipulatorPanel manipulatorPanel = new ManipulatorPanel(buttonBox);
-  private final OverridePanel overridePanel = new OverridePanel(buttonBox);
-  private final SwerveDrivetrain driveSys;
+  // Subsystems
+  private final Drive drive;
+
+  // Controller
+  private final CommandXboxController controller = new CommandXboxController(0);
+
+  // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
 
+  /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
-    autoChooser = new LoggedDashboardChooser<>("Auto chooser");
-    if (WhoAmI.mode != WhoAmI.Mode.REPLAY) {
-      switch (WhoAmI.bot) {
-        case SIMSWERVEBASE:
-          driveSys =
-              new SwerveDrivetrain(
-                  new Module(new ModuleIOSim(0), 0),
-                  new Module(new ModuleIOSim(1), 1),
-                  new Module(new ModuleIOSim(2), 2),
-                  new Module(new ModuleIOSim(3), 3),
-                  new IMUIOSim());
-          break;
-        case SWERVEBASE:
-          driveSys =
-              new SwerveDrivetrain(
-                  new Module(new ModuleIOKrakens(6, 5, 12, "FL"), 0),
-                  new Module(new ModuleIOKrakens(7, 8, 13, "FR"), 1),
-                  new Module(new ModuleIOKrakens(4, 3, 11, "BL"), 2),
-                  new Module(new ModuleIOKrakens(1, 2, 10, "BR"), 3),
-                  new IMUIONavx());
-          var vision =
-              new FusedVision(
-                  driveSys,
-                  new Transform3d(
-                      new Translation3d(-0.15, -0.17, 0),
-                      new Rotation3d(00.0 * Math.PI / 180.0, 0, 180.0 * Math.PI / 180.0)),
-                  new VisionSLAMIOQuest(),
-                  new VisionIOPhotonVision(
-                      "TH_CAM0",
-                      new Transform3d(
-                          new Translation3d(-12 * 0.0254, -9.5 * 0.0254, 0),
-                          new Rotation3d(-4.0 * Math.PI / 180.0, 0, Math.PI))));
+    switch (Constants.currentMode) {
+      case REAL:
+        // Real robot, instantiate hardware IO implementations
+        // ModuleIOTalonFX is intended for modules with TalonFX drive, TalonFX turn, and
+        // a CANcoder
+        drive =
+            new Drive(
+                new GyroIOPigeon2(),
+                new ModuleIOTalonFX(TunerConstants.FrontLeft),
+                new ModuleIOTalonFX(TunerConstants.FrontRight),
+                new ModuleIOTalonFX(TunerConstants.BackLeft),
+                new ModuleIOTalonFX(TunerConstants.BackRight));
 
-          break;
-        default:
-          driveSys =
-              new SwerveDrivetrain(
-                  new Module(new ModuleIOSim(0), 0),
-                  new Module(new ModuleIOSim(1), 1),
-                  new Module(new ModuleIOSim(2), 2),
-                  new Module(new ModuleIOSim(3), 3),
-                  new IMUIOSim());
-      }
-      for (var appendage : WhoAmI.appendages) {}
+        // The ModuleIOTalonFXS implementation provides an example implementation for
+        // TalonFXS controller connected to a CANdi with a PWM encoder. The
+        // implementations
+        // of ModuleIOTalonFX, ModuleIOTalonFXS, and ModuleIOSpark (from the Spark
+        // swerve
+        // template) can be freely intermixed to support alternative hardware
+        // arrangements.
+        // Please see the AdvantageKit template documentation for more information:
+        // https://docs.advantagekit.org/getting-started/template-projects/talonfx-swerve-template#custom-module-implementations
+        //
+        // drive =
+        // new Drive(
+        // new GyroIOPigeon2(),
+        // new ModuleIOTalonFXS(TunerConstants.FrontLeft),
+        // new ModuleIOTalonFXS(TunerConstants.FrontRight),
+        // new ModuleIOTalonFXS(TunerConstants.BackLeft),
+        // new ModuleIOTalonFXS(TunerConstants.BackRight));
+        break;
 
-    } else {
-      switch (WhoAmI.bot) {
-        case SIMSWERVEBASE:
-          driveSys =
-              new SwerveDrivetrain(
-                  new Module(new ModuleIO() {}, 0),
-                  new Module(new ModuleIO() {}, 1),
-                  new Module(new ModuleIO() {}, 2),
-                  new Module(new ModuleIO() {}, 3),
-                  new IMUIO() {});
-          break;
-        case SWERVEBASE:
-          driveSys =
-              new SwerveDrivetrain(
-                  new Module(new ModuleIO() {}, 0),
-                  new Module(new ModuleIO() {}, 1),
-                  new Module(new ModuleIO() {}, 2),
-                  new Module(new ModuleIO() {}, 3),
-                  new IMUIO() {});
-          // TODO: this is a bad way of doing this
-          var vision =
-              new FusedVision(
-                  driveSys,
-                  new Transform3d(
-                      new Translation3d(),
-                      new Rotation3d(0.0 * Math.PI / 180.0, 0, 90.0 * Math.PI / 180.0)),
-                  new VisionSLAMIO() {},
-                  new VisionIO() {});
-          break;
-        default:
-          driveSys =
-              new SwerveDrivetrain(
-                  new Module(new ModuleIO() {}, 0),
-                  new Module(new ModuleIO() {}, 1),
-                  new Module(new ModuleIO() {}, 2),
-                  new Module(new ModuleIO() {}, 3),
-                  new IMUIO() {});
-      }
+      case SIM:
+        // Sim robot, instantiate physics sim IO implementations
+        drive =
+            new Drive(
+                new GyroIO() {},
+                new ModuleIOSim(TunerConstants.FrontLeft),
+                new ModuleIOSim(TunerConstants.FrontRight),
+                new ModuleIOSim(TunerConstants.BackLeft),
+                new ModuleIOSim(TunerConstants.BackRight));
+        break;
+
+      default:
+        // Replayed robot, disable IO implementations
+        drive =
+            new Drive(
+                new GyroIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {});
+        break;
     }
 
-    TeleopDrive teleopDrive = configureSharedBindings();
+    // Set up auto routines
+    autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
 
-    AutoFactory autoFactory =
-        new AutoFactory(
-            driveSys::getPosition,
-            driveSys::setPosition, // TODO: don't do this (ie: give fake function)
-            driveSys::followTrajectory,
-            false,
-            driveSys);
-    autoChooser.addDefaultOption("Nothing", Commands.none());
+    // Set up SysId routines
     autoChooser.addOption(
-        "Move backward 3s",
-        Commands.runEnd(
-                () -> driveSys.humanDrive(new ChassisSpeeds(-1, 0, 0)),
-                () -> driveSys.humanDrive(new ChassisSpeeds()),
-                driveSys)
-            .raceWith(Commands.waitSeconds(3)));
+        "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
+    autoChooser.addOption(
+        "Drive Simple FF Characterization", DriveCommands.feedforwardCharacterization(drive));
+    autoChooser.addOption(
+        "Drive SysId (Quasistatic Forward)",
+        drive.sysIdQuasistatic(SysIdRoutine.Direction.kForward));
+    autoChooser.addOption(
+        "Drive SysId (Quasistatic Reverse)",
+        drive.sysIdQuasistatic(SysIdRoutine.Direction.kReverse));
+    autoChooser.addOption(
+        "Drive SysId (Dynamic Forward)", drive.sysIdDynamic(SysIdRoutine.Direction.kForward));
+    autoChooser.addOption(
+        "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
 
-    // Level represents the height of the elevator preset
-    for (int level = 1; level <= 3; level++) {
-      // ************ SCORE 1 CORAL AND RETURN TO STATION ************
-      // Routines for all 3 starting positions
-      AutoRoutine lAuto = autoFactory.newRoutine("L-Auto");
-      AutoRoutine mAuto = autoFactory.newRoutine("M-Auto");
-      AutoRoutine rAuto = autoFactory.newRoutine("R-Auto");
-
-      // Add all of the trajectories
-      AutoTrajectory lAlign = lAuto.trajectory("L-Auto", 0);
-      AutoTrajectory lPickup = lAuto.trajectory("L-Auto", 1);
-
-      AutoTrajectory mAlign = mAuto.trajectory("M-Auto", 0);
-      AutoTrajectory mPickup = mAuto.trajectory("M-Auto", 1);
-
-      AutoTrajectory rAlign = rAuto.trajectory("R-Auto", 0);
-      AutoTrajectory rPickup = rAuto.trajectory("R-Auto", 1);
-
-      AutoRoutine temp = autoFactory.newRoutine("test");
-      AutoTrajectory tempTraj = temp.trajectory("R-Auto", 0);
-      temp.active().onTrue(tempTraj.cmd());
-      autoChooser.addOption("Test", temp.cmd());
-
-      // This is the command to drop the current coral
-
-      // This configures the actual commands that end up being run. It uses trajectories as well as
-      // other cmds
-
-      // Add paths to the auto chooser
-      autoChooser.addOption("Left 1 Coral Lvl " + level + " - Choreo", lAuto.cmd());
-      autoChooser.addOption("Middle 1 Coral Lvl " + level + " - Choreo", mAuto.cmd());
-      autoChooser.addOption("Right 1 Coral Lvl " + level + " - Choreo", rAuto.cmd());
-    }
-
-    // ************ DRIVE TO CORAL STATION ************
-    // Make the routines
-    // They will drive to the nearest station, middle has an auto to go to either station
-    // It reuses the first segment of the main autos
-    AutoRoutine lLineup = autoFactory.newRoutine("L-Lineup");
-    AutoRoutine mLineup = autoFactory.newRoutine("M-Lineup");
-    AutoRoutine rLineup = autoFactory.newRoutine("R-Lineup");
-
-    // Load all the trajectories
-    AutoTrajectory lAlign = lLineup.trajectory("L-Auto", 0);
-    AutoTrajectory mAlign = mLineup.trajectory("M-Auto", 0);
-    AutoTrajectory rAlign = rLineup.trajectory("R-Auto", 0);
-
-    // Merge all the commands into the auto routines
-    lLineup.active().onTrue(lAlign.cmd());
-    mLineup.active().onTrue(mAlign.cmd());
-    rLineup.active().onTrue(rAlign.cmd());
-
-    // Add the new paths to the auto chooser
-    autoChooser.addOption("Left lineup - Choreo", lLineup.cmd());
-    autoChooser.addOption("Middle lineup - Choreo", mLineup.cmd());
-    autoChooser.addOption("Right lineup - Choreo", rLineup.cmd());
-
-    if (WhoAmI.isDemoMode) {
-      configureDemoBindings(teleopDrive);
-    } else {
-      configureCompBindings();
-    }
+    // Configure the button bindings
+    configureButtonBindings();
   }
 
-  public void configureAutos() {}
+  /**
+   * Use this method to define your button->command mappings. Buttons can be created by
+   * instantiating a {@link GenericHID} or one of its subclasses ({@link
+   * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then passing it to a {@link
+   * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
+   */
+  private void configureButtonBindings() {
+    // Default command, normal field-relative drive
+    drive.setDefaultCommand(
+        DriveCommands.joystickDrive(
+            drive,
+            () -> -controller.getLeftY(),
+            () -> -controller.getLeftX(),
+            () -> -controller.getRightX()));
 
-  /** Updates the pose estimator to use the correct initial pose */
-  public void setPose(Pose2d pose) {
-    driveSys.setPosition(pose);
+    // Lock to 0° when A button is held
+    controller
+        .a()
+        .whileTrue(
+            DriveCommands.joystickDriveAtAngle(
+                drive,
+                () -> -controller.getLeftY(),
+                () -> -controller.getLeftX(),
+                () -> Rotation2d.kZero));
+
+    // Switch to X pattern when X button is pressed
+    controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+
+    // Reset gyro to 0° when B button is pressed
+    controller
+        .b()
+        .onTrue(
+            Commands.runOnce(
+                    () ->
+                        drive.setPose(
+                            new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
+                    drive)
+                .ignoringDisable(true));
   }
 
-  private void configureDemoBindings(TeleopDrive teleopDrive) {
-    teleopDrive.isKidMode = false;
-  }
-
-  private void configureCompBindings() {
-    // Manipulator Presets
-
-    driverController.back().onTrue(Commands.runOnce(() -> driveSys.setPosition(Pose2d.kZero)));
-  }
-
-  private TeleopDrive configureSharedBindings() {
-    var teleopDrive = new TeleopDrive(driveSys, driverController, overridePanel);
-
-    driveSys.setDefaultCommand(teleopDrive);
-
-    return teleopDrive;
-  }
-
+  /**
+   * Use this to pass the autonomous command to the main {@link Robot} class.
+   *
+   * @return the command to run in autonomous
+   */
   public Command getAutonomousCommand() {
     return autoChooser.get();
   }

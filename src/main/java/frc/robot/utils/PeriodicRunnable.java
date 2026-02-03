@@ -2,7 +2,7 @@ package frc.robot.utils;
 
 import java.util.ArrayList;
 
-/** Like a subsystem, but just the periodic function. Made for {@link LoggedTunableNumber}. */
+/** Like a subsystem, but just the periodic function. Made for . */
 public abstract class PeriodicRunnable {
   private static final ArrayList<PeriodicRunnable> allRunnable = new ArrayList<>();
   private static final ArrayList<PeriodicRunnable> proposedRunnable = new ArrayList<>();

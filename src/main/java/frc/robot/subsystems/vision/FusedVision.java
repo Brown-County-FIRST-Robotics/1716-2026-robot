@@ -2,16 +2,15 @@ package frc.robot.subsystems.vision;
 
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.*;
-import frc.robot.subsystems.swerve.SwerveDrivetrain;
+import frc.robot.subsystems.drive.Drive;
 import frc.robot.utils.*;
-import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
 
 /** The vision subsystem */
 public class FusedVision extends PeriodicRunnable {
   final VisionIO io;
   public final VisionIO.VisionIOInputs inputs = new VisionIO.VisionIOInputs();
-  final SwerveDrivetrain drivetrain;
+  final Drive drivetrain;
 
   final VisionSLAMIO slamio;
   final VisionSLAMIOInputsAutoLogged slamInputs = new VisionSLAMIOInputsAutoLogged();
@@ -26,16 +25,16 @@ public class FusedVision extends PeriodicRunnable {
   }
 
   public FusedVision(
-      SwerveDrivetrain drivetrain, Transform3d slamPose, VisionSLAMIO slamio, VisionIO visionIO) {
+      Drive drivetrain, Transform3d slamPose, VisionSLAMIO slamio, VisionIO visionIO) {
     this.drivetrain = drivetrain;
     this.slamPose = slamPose;
     this.slamio = slamio;
-    drivetrain.getPE().pt = Optional.of(this);
+    //    drivetrain.getPE().pt = Optional.of(this);
     this.io = visionIO;
-    new CustomAlerts.CustomAlert(
-        Alert.AlertType.WARNING,
-        () -> slamInputs.battPercent < 20.0,
-        () -> "Quest battery is at " + slamInputs.battPercent + "%");
+    //    new CustomAlerts.CustomAlert(
+    //        Alert.AlertType.kWarning,
+    //        () -> slamInputs.battPercent < 20.0,
+    //        () -> "Quest battery is at " + slamInputs.battPercent + "%");
   }
 
   public Pose2d getSlamPose() {
