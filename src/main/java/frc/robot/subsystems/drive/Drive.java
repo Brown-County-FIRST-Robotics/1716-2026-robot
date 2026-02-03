@@ -59,9 +59,9 @@ public class Drive extends SubsystemBase {
               Math.hypot(TunerConstants.BackRight.LocationX, TunerConstants.BackRight.LocationY)));
 
   // PathPlanner config constants
-  private static final double ROBOT_MASS_KG = 74.088;
-  private static final double ROBOT_MOI = 6.883;
-  private static final double WHEEL_COF = 1.2;
+  private static final double ROBOT_MASS_KG = 54.088;
+  private static final double ROBOT_MOI = 6.883; // moment of inertia
+  private static final double WHEEL_COF = 1.4; // coefficiant of friction
   private static final RobotConfig PP_CONFIG =
       new RobotConfig(
           ROBOT_MASS_KG,
