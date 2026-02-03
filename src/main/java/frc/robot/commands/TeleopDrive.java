@@ -6,10 +6,9 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import frc.robot.Constants;
-import frc.robot.subsystems.swerve.SwerveDrivetrain;
+import frc.robot.OurConstants;
+import frc.robot.subsystems.drive.Drive;
 import frc.robot.utils.DualRateLimiter;
-import frc.robot.utils.Overrides;
 import frc.robot.utils.Vector;
 import frc.robot.utils.buttonbox.OverridePanel;
 import java.util.Optional;
@@ -17,7 +16,7 @@ import org.littletonrobotics.junction.Logger;
 
 /** A command for manual control */
 public class TeleopDrive extends Command {
-  private final SwerveDrivetrain drivetrain;
+  private final Drive drivetrain;
   private final CommandXboxController controller;
   private final Optional<CommandXboxController> secondController;
   private final OverridePanel overridePanel;
@@ -38,7 +37,7 @@ public class TeleopDrive extends Command {
   }
 
   public void setKidModeSpeed(double newKidModeSpeed) {
-    if (newKidModeSpeed > 0 && newKidModeSpeed <= Constants.Driver.MAX_SPEED) {
+    if (newKidModeSpeed > 0 && newKidModeSpeed <= OurConstants.Driver.MAX_SPEED) {
       this.kidModeSpeed = newKidModeSpeed;
     }
   }
@@ -54,7 +53,7 @@ public class TeleopDrive extends Command {
   Vector previousCommand = Vector.zeroVector();
 
   public TeleopDrive(
-      SwerveDrivetrain drivetrain, CommandXboxController controller, OverridePanel overridePanel_) {
+      Drive drivetrain, CommandXboxController controller, OverridePanel overridePanel_) {
     this.drivetrain = drivetrain;
     this.controller = controller;
     this.secondController = Optional.empty();
@@ -87,7 +86,7 @@ public class TeleopDrive extends Command {
             deadScale(controller.getLeftX()),
             rotationLimiter.calculate(
                 deadScale(controller.getRightX())
-                    * Constants.Driver.MAX_THETA_SPEED
+                    * OurConstants.Driver.MAX_THETA_SPEED
                     * slowModeSpeedModifier
                     * (isKidMode
                         ? 0.2
@@ -99,9 +98,9 @@ public class TeleopDrive extends Command {
       Rotation2d currentRotation =
           DriverStation.getAlliance().orElse(DriverStation.Alliance.Red)
                   == DriverStation.Alliance.Red
-              ? drivetrain.getPosition().getRotation()
+              ? drivetrain.getPose().getRotation()
               : drivetrain
-                  .getPosition()
+                  .getPose()
                   .getRotation()
                   .rotateBy(
                       Rotation2d.fromRotations(0.5)); // current rotation relative to the driver
@@ -140,37 +139,38 @@ public class TeleopDrive extends Command {
         commandedVector.getNorm() * Math.abs(commandedVector.getNorm())); // square it
     commandedVector.setNorm(
         commandedVector.getNorm()
-            * (isKidMode ? kidModeSpeed : Constants.Driver.MAX_SPEED)
+            * (isKidMode ? kidModeSpeed : OurConstants.Driver.MAX_SPEED)
             * slowModeSpeedModifier); // convert to m/s from percent
 
     // make sure command never gets too far from reality
     Vector realVelocity =
         Vector.fromCartesian(
-            drivetrain.getVelocity().vxMetersPerSecond, drivetrain.getVelocity().vyMetersPerSecond);
+            drivetrain.getChassisSpeeds().vxMetersPerSecond,
+            drivetrain.getChassisSpeeds().vyMetersPerSecond);
     Vector currentRealityDistortion = previousCommand.minus(realVelocity);
     Vector currentVector =
         realVelocity.plus(
             Vector.fromPolar(
-                clamp(currentRealityDistortion.getNorm(), Constants.Driver.MAX_SPEED / 5.0),
+                clamp(currentRealityDistortion.getNorm(), OurConstants.Driver.MAX_SPEED / 5.0),
                 currentRealityDistortion.getAngle()));
 
     Vector velocityChange = commandedVector.minus(currentVector);
     double frictionClampedVelocityChange =
         clamp(
             velocityChange.getNorm(),
-            Constants.Driver.MAX_FRICTION_ACCELERATION / 50); // TODO: CHANGE NAME
+            OurConstants.Driver.MAX_FRICTION_ACCELERATION / 50); // TODO: CHANGE NAME
     Vector cappedAcceleration =
         Vector.fromPolar(frictionClampedVelocityChange, velocityChange.getAngle());
     commandedVector = currentVector.plus(cappedAcceleration);
 
     double jeff = commandedVector.getNorm() - currentVector.getNorm();
-    if (jeff > Constants.Driver.MAX_ACCELERATION / 50) {
-      commandedVector.setNorm(currentVector.getNorm() + Constants.Driver.MAX_ACCELERATION / 50);
+    if (jeff > OurConstants.Driver.MAX_ACCELERATION / 50) {
+      commandedVector.setNorm(currentVector.getNorm() + OurConstants.Driver.MAX_ACCELERATION / 50);
     }
 
     Logger.recordOutput("Current Speed", currentVector.getNorm());
 
-    drivetrain.humanDrive(
+    drivetrain.runVelocity(
         ChassisSpeeds.discretize(
             new ChassisSpeeds(
                 commandedVector.getX(),
@@ -184,15 +184,12 @@ public class TeleopDrive extends Command {
     previousCommand = commandedVector;
 
     if (controller.getHID().getBackButtonPressed()) {
-      drivetrain.setPosition(
-          new Pose2d(drivetrain.getPosition().getTranslation(), Rotation2d.fromRotations(0.5)));
+      drivetrain.setPose(
+          new Pose2d(drivetrain.getPose().getTranslation(), Rotation2d.fromRotations(0.5)));
     }
 
-    doFieldOriented = Overrides.useFieldOriented.get();
+    //    doFieldOriented = Overrides.useFieldOriented.get();
     locked = controller.getHID().getXButtonPressed() || locked;
-    if (locked) {
-      drivetrain.lockWheels();
-    }
 
     Logger.recordOutput("TeleopDrive/locked", locked);
     Logger.recordOutput("TeleopDrive/foc", doFieldOriented);
@@ -200,7 +197,7 @@ public class TeleopDrive extends Command {
 
   @Override
   public void end(boolean interrupted) {
-    drivetrain.humanDrive(new ChassisSpeeds());
+    drivetrain.runVelocity(new ChassisSpeeds());
   }
 
   /**

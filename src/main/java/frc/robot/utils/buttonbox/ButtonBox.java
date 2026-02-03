@@ -1,7 +1,7 @@
 package frc.robot.utils.buttonbox;
 
+import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.GenericHID;
-import frc.robot.utils.Alert;
 import java.util.ArrayList;
 import java.util.List;
 import org.littletonrobotics.junction.networktables.*;
@@ -10,7 +10,7 @@ public class ButtonBox {
   final List<ButtonBoxPanel> panels = new ArrayList<>();
   final GenericHID wrapped;
   final List<LoggedNetworkBoolean> dash = new ArrayList<>();
-  Alert disconnectedAlert = new Alert("BB Unplugged", Alert.AlertType.WARNING);
+  Alert disconnectedAlert = new Alert("BB Unplugged", Alert.AlertType.kWarning);
 
   public ButtonBox(int index) {
     wrapped = new GenericHID(index);
