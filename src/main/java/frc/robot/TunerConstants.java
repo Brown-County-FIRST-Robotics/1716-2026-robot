@@ -31,12 +31,12 @@ public class TunerConstants {
   // PID defined by mechanism, not rotor (0.1 = 10)
   private static final Slot0Configs steerGains =
       new Slot0Configs()
-          .withKP(25)
+          .withKP(20)
           .withKI(0)
           .withKD(0)
           .withKS(0)
-          .withKV(0)
-          .withKA(0)
+          .withKV(20)
+          .withKA(10)
           .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign);
   // When using closed-loop control, the drive motor uses the control
   // output type specified by SwerveModuleConstants.DriveMotorClosedLoopOutput
