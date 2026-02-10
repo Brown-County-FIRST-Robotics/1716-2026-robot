@@ -7,8 +7,14 @@
 
 package frc.robot;
 
+import edu.wpi.first.hal.HALUtil;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
@@ -27,19 +33,34 @@ public class Robot extends LoggedRobot {
   private RobotContainer robotContainer;
 
   public Robot() {
-    // Record metadata
-    //    Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
-    //    Logger.recordMetadata("BuildDate", BuildConstants.BUILD_DATE);
-    //    Logger.recordMetadata("GitSHA", BuildConstants.GIT_SHA);
-    //    Logger.recordMetadata("GitDate", BuildConstants.GIT_DATE);
-    //    Logger.recordMetadata("GitBranch", BuildConstants.GIT_BRANCH);
-    //    Logger.recordMetadata(
-    //        "GitDirty",
-    //        switch (BuildConstants.DIRTY) {
-    //          case 0 -> "All changes committed";
-    //          case 1 -> "Uncommitted changes";
-    //          default -> "Unknown";
-    //        });
+    Logger.recordMetadata("ProjectName", "2025");
+    File deployDir = Filesystem.getDeployDirectory();
+    File tagFile = new File(deployDir, "git_tag.txt");
+    File deployerFile = new File(deployDir, "deployer.txt");
+    String tagName;
+    String deployer;
+    try {
+      Scanner reader = new Scanner(tagFile);
+      tagName = reader.nextLine();
+      reader.close();
+    } catch (FileNotFoundException e) {
+      tagName = "Deploy did not send git data";
+      new Alert(
+              "Git data was not included in deploy. This will make it impossible to determine what code was run from the logfile. ",
+              Alert.AlertType.kWarning)
+          .set(true);
+    }
+    try {
+      Scanner reader = new Scanner(deployerFile);
+      deployer = reader.nextLine();
+      reader.close();
+    } catch (FileNotFoundException e) {
+      new Alert("The identity of the deployer is unknown", Alert.AlertType.kWarning).set(true);
+      deployer = "Unknown deployer";
+    }
+    Logger.recordMetadata("Tag Name", tagName);
+    Logger.recordMetadata("Deployer", deployer);
+    Logger.recordMetadata("SN", HALUtil.getSerialNumber());
 
     // Set up data receivers & replay source
     switch (Constants.currentMode) {
