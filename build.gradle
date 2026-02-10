@@ -127,22 +127,6 @@ tasks.withType(JavaCompile) {
     options.compilerArgs.add '-XDstringConcat=inline'
 }
 
-// Check selected robot when deploying
-tasks.register('checkRobot', JavaExec) {
-    dependsOn "classes"
-    mainClass = "frc.robot.WhoAmI"
-    classpath = sourceSets.main.runtimeClasspath
-    args("real")
-}
-deployroborio.dependsOn(checkRobot)
-tasks.register('checkSim',JavaExec) {
-    dependsOn(classes)
-    mainClass = "frc.robot.WhoAmI"
-    classpath = sourceSets.main.runtimeClasspath
-    args("sim")
-}
-//simulateJava.dependsOn(checkSim);
-
 
 def writeGitData =tasks.create("writeGitData") {
     doLast(){
