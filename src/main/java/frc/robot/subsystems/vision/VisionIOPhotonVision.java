@@ -1,47 +1,39 @@
 package frc.robot.subsystems.vision;
 
-import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.math.geometry.Transform3d;
-import java.util.Optional;
+import java.util.List;
 import org.photonvision.PhotonCamera;
-import org.photonvision.PhotonPoseEstimator;
+import org.photonvision.targeting.PhotonPipelineResult;
+import org.photonvision.targeting.PhotonTrackedTarget;
 
 /** The IO layer for one PhotonVision camera */
 public class VisionIOPhotonVision implements VisionIO {
-  final PhotonCamera cam;
 
-  final PhotonPoseEstimator photonPoseEstimator;
-  /**
-   * Constructs a new <code>VisionIOPhotonVision</code> from a camera name and pose
-   *
-   * @param cam_name The name of the camera
-   */
-  public VisionIOPhotonVision(String cam_name, Transform3d camPose) {
-    cam = new PhotonCamera(cam_name);
-    photonPoseEstimator =
-        new PhotonPoseEstimator(
-            AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded),
-            PhotonPoseEstimator.PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
-            camPose);
+  PhotonCamera turretCamera;
+
+  public VisionIOPhotonVision(String cameraName) {
+
+    turretCamera = new PhotonCamera("turretCamera");
   }
 
   @Override
   public void updateInputs(VisionIOInputs inputs) {
-    var urres = cam.getAllUnreadResults();
-    if (!urres.isEmpty()) {
-      var k = photonPoseEstimator.update(urres.get(0));
-      if (k.isPresent()) {
-        inputs.pose = Optional.ofNullable(k.get().estimatedPose);
-        inputs.timestamp = Optional.of(k.get().timestampSeconds);
-      } else {
-        inputs.pose = Optional.empty();
-        inputs.timestamp = Optional.empty();
-      }
 
-    } else {
-      inputs.pose = Optional.empty();
-      inputs.timestamp = Optional.empty();
+    PhotonPipelineResult results = turretCamera.getLatestResult();
+    boolean hasTargets = results.hasTargets();
+    List<PhotonTrackedTarget> targets = results.getTargets();
+
+    inputs.yaw = new double[targets.size()];
+    inputs.pitch = new double[targets.size()];
+    inputs.roll = new double[targets.size()];
+    inputs.area = new double[targets.size()];
+    inputs.idNumber = new int[targets.size()];
+
+    for (int i = 0; i < targets.size(); i++) {
+      var target = targets.get(0);
+      inputs.yaw[i] = target.getYaw();
+      inputs.pitch[i] = target.getPitch();
+      inputs.area[i] = target.getArea();
+      inputs.idNumber[i] = target.getFiducialId();
     }
   }
 }
