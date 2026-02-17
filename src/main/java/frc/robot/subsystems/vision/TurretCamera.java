@@ -1,8 +1,7 @@
 package frc.robot.subsystems.vision;
 
-import org.littletonrobotics.junction.Logger;
-
 import frc.robot.utils.PeriodicRunnable;
+import org.littletonrobotics.junction.Logger;
 
 public class TurretCamera extends PeriodicRunnable {
 
