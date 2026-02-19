@@ -10,6 +10,7 @@ package frc.robot;
 import edu.wpi.first.hal.HALUtil;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.Servo;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import java.io.File;
@@ -31,8 +32,11 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 public class Robot extends LoggedRobot {
   private Command autonomousCommand;
   private RobotContainer robotContainer;
+  private Servo sv;
 
   public Robot() {
+    sv = new Servo(7);
+    sv.setBoundsMicroseconds(2000, 1900, 1500, 1100, 1000);
     Logger.recordMetadata("ProjectName", "2025");
     File deployDir = Filesystem.getDeployDirectory();
     File tagFile = new File(deployDir, "git_tag.txt");
@@ -95,6 +99,8 @@ public class Robot extends LoggedRobot {
   /** This function is called periodically during all modes. */
   @Override
   public void robotPeriodic() {
+    sv.setPulseTimeMicroseconds(2000);
+    //    sv.setPulseTimeMicroseconds((int) (1200 + (Timer.getFPGATimestamp() * 100) % 1000));
     // Optionally switch the thread to high priority to improve loop
     // timing (see the template project documentation for details)
     // Threads.setCurrentThreadPriority(true, 99);
