@@ -23,6 +23,9 @@ import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
+import frc.robot.utils.buttonbox.ButtonBox;
+import frc.robot.utils.buttonbox.ControlPanel;
+
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -40,6 +43,10 @@ public class RobotContainer {
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
+
+  private final ButtonBox buttonBox = new ButtonBox(2);
+
+  private final ControlPanel controlPanel = new ControlPanel(buttonBox);
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {

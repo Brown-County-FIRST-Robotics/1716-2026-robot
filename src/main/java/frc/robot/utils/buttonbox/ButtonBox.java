@@ -14,7 +14,6 @@ public class ButtonBox {
 
   public ButtonBox(int index) {
     wrapped = new GenericHID(index);
-    // TODO: make this work
     for (int i = 0; i < 50; i++) {
       dash.add(new LoggedNetworkBoolean("Shuffleboard/buttonbox/" + i));
       dash.get(dash.size() - 1).set(false);
