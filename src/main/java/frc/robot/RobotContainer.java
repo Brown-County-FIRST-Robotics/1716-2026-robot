@@ -23,6 +23,9 @@ import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
+import frc.robot.subsystems.vision.Quest;
+import frc.robot.subsystems.vision.QuestIOQuest;
+import gg.questnav.questnav.QuestNav;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -34,7 +37,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 public class RobotContainer {
   // Subsystems
   private final Drive drive;
-
+  private final Quest qwest;
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
 
@@ -43,6 +46,7 @@ public class RobotContainer {
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
+    qwest = new Quest(new QuestIOQuest(new QuestNav()));
     switch (Constants.currentMode) {
       case REAL:
         // Real robot, instantiate hardware IO implementations
@@ -51,11 +55,10 @@ public class RobotContainer {
         drive =
             new Drive(
                 new GyroIO() {
-
                   @Override
                   public void updateInputs(GyroIOInputs inputs) {
-                    inputs.connected = true;
-                    inputs.yawPosition = Rotation2d.kZero;
+                    inputs.connected = qwest.connected();
+                    inputs.yawPosition = qwest.gyroLikeYaw();
                   }
                 },
                 new ModuleIOTalonFX(TunerConstants.FrontLeft),
