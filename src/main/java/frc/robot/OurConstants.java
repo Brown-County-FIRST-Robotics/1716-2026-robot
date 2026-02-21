@@ -42,6 +42,8 @@ public final class OurConstants {
     public static final int GENERIC_BRUSHED = 20;
   }
 
+  public static final double CONNECTED_DEBOUNCE_TIME = 0.5;
+
   /** The initial pose of the robot */
   public static final Pose2d INIT_POSE = new Pose2d(0, 0, Rotation2d.fromDegrees(180));
 }
