@@ -8,6 +8,8 @@
 package frc.robot;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.path.PathPlannerPath;
+import com.pathplanner.lib.util.FileVersionException;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.GenericHID;
@@ -26,6 +28,8 @@ import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.vision.Quest;
 import frc.robot.subsystems.vision.QuestIOQuest;
 import gg.questnav.questnav.QuestNav;
+import java.io.IOException;
+import org.json.simple.parser.ParseException;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -126,6 +130,16 @@ public class RobotContainer {
         "Drive SysId (Dynamic Forward)", drive.sysIdDynamic(SysIdRoutine.Direction.kForward));
     autoChooser.addOption(
         "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
+    try {
+      autoChooser.addOption(
+          "Choreo - Middle -> climb",
+          AutoBuilder.followPath(PathPlannerPath.fromChoreoTrajectory("MidToClimb")));
+      autoChooser.addOption(
+          "Choreo - Human player side -> disturb balls -> shoot",
+          AutoBuilder.followPath(PathPlannerPath.fromChoreoTrajectory("FuelToucher")));
+    } catch (FileVersionException | IOException | ParseException e) {
+      e.printStackTrace();
+    }
 
     // Configure the button bindings
     configureButtonBindings();
