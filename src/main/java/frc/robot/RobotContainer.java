@@ -128,8 +128,8 @@ public class RobotContainer {
     autoChooser.addOption(
         "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
     try {
-      autoChooser.addOption(
-          "Choreo (Test)", AutoBuilder.followPath(PathPlannerPath.fromChoreoTrajectory("Rotate")));
+      autoChooser.addOption("Choreo - Middle -> climb", AutoBuilder.followPath(PathPlannerPath.fromChoreoTrajectory("MidToClimb")));
+      autoChooser.addOption("Choreo - Human player side -> disturb balls -> shoot", AutoBuilder.followPath(PathPlannerPath.fromChoreoTrajectory("FuelToucher")));
     } catch (FileVersionException | IOException | ParseException e) {
       e.printStackTrace();
     }
