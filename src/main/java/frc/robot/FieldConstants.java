@@ -3,9 +3,7 @@ package frc.robot;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rectangle2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
@@ -13,9 +11,18 @@ import edu.wpi.first.wpilibj.DriverStation;
 
 /** Field positions of game components */
 public class FieldConstants {
-  public static final AprilTagFieldLayout layout=AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeAndyMark);
+  public static final AprilTagFieldLayout layout =
+      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
   public static final double fieldLength = layout.getFieldLength(); // meters
   public static final double fieldWidth = layout.getFieldWidth();
+
+  public static Translation3d hub() {
+    return flip(
+        new Translation3d(
+            layout.getTagPose(26).get().getX() + Units.inchesToMeters(47.0) / 2.0,
+            fieldWidth / 2.0,
+            Units.inchesToMeters(72.0)));
+  }
 
   /**
    * Flips the translation based on alliance
