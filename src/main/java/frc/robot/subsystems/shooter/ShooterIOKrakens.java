@@ -4,8 +4,11 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.ClosedLoopGeneralConfigs;
+import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
+import com.ctre.phoenix6.configs.OpenLoopRampsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
@@ -28,6 +31,14 @@ public class ShooterIOKrakens implements ShooterIO {
     var configurator = shooterMotor.getConfigurator();
     configurator.apply(new Slot0Configs().withKP(1).withKV(1).withKI(0).withKD(0).withKA(0));
     configurator.apply(new ClosedLoopGeneralConfigs());
+    configurator.apply(
+        new ClosedLoopRampsConfigs()
+            .withDutyCycleClosedLoopRampPeriod(1.0)
+            .withTorqueClosedLoopRampPeriod(1.0));
+    configurator.apply(
+        new OpenLoopRampsConfigs()
+            .withDutyCycleOpenLoopRampPeriod(1.0)
+            .withVoltageOpenLoopRampPeriod(1.0));
 
     shooterVelocitySignal = shooterMotor.getVelocity();
     shooterAppliedOutputs = shooterMotor.getMotorVoltage();
@@ -48,6 +59,11 @@ public class ShooterIOKrakens implements ShooterIO {
   @Override
   public void commandShooterSpeed(double speed) {
     shooterMotor.setControl(new VelocityVoltage(speed));
+  }
+
+  @Override
+  public void quickShooter(double voltz) {
+    shooterMotor.setControl(new VoltageOut(voltz));
   }
 
   @Override

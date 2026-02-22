@@ -85,6 +85,14 @@ public class Shooter implements Subsystem {
                     / (2.0 * hoodLegLength1 * hoodLegLength2)));
   }
 
+  public void quickWheelCommand(double volts) {
+    io.quickShooter(volts);
+  }
+
+  public void quickServoCommand(double increment) {
+    io.commandHoodPosition(increment * 0.5 + inputs.shooterHoodPosition);
+  }
+
   public Shooter(ShooterIO io) {
     this.io = io;
   }
