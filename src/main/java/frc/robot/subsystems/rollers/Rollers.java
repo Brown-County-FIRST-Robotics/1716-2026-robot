@@ -37,6 +37,10 @@ public class Rollers extends SubsystemBase {
     io.commandSpeed(rollerVelocity, kicker_velocity);
   }
 
+  public void jset(double volts) {
+    io.justSet(volts);
+  }
+
   public Command spinRollers() {
     return Commands.run(() -> setSpeeds(20, 20), this);
   }
