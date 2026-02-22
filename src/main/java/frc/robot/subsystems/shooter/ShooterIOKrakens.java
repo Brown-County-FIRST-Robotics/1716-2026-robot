@@ -36,7 +36,6 @@ public class ShooterIOKrakens implements ShooterIO {
 
   @Override
   public void updateInputs(ShooterIOInputs inputs) {
-
     var status =
         BaseStatusSignal.refreshAll(shooterAppliedOutputs, shooterVelocitySignal, shooterCurrent);
     inputs.shooterAppliedOutput = shooterAppliedOutputs.getValueAsDouble();
@@ -52,7 +51,7 @@ public class ShooterIOKrakens implements ShooterIO {
   }
 
   @Override
-  public void commandHoodPosition(double position) {
-    hoodServo.setAngle(position);
+  public void commandHoodPosition(double length) {
+    hoodServo.setPulseTimeMicroseconds((int) (1000 + 1000 * (length / 2)));
   }
 }
