@@ -25,6 +25,8 @@ import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
+import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.shooter.ShooterIOKrakens;
 import frc.robot.subsystems.vision.Quest;
 import frc.robot.subsystems.vision.QuestIOQuest;
 import gg.questnav.questnav.QuestNav;
@@ -42,8 +44,10 @@ public class RobotContainer {
   // Subsystems
   private final Drive drive;
   private final Quest qwest;
+  private Shooter shooter;
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
+  private final CommandXboxController opcon = new CommandXboxController(1);
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
@@ -69,6 +73,8 @@ public class RobotContainer {
                 new ModuleIOTalonFX(TunerConstants.FrontRight),
                 new ModuleIOTalonFX(TunerConstants.BackLeft),
                 new ModuleIOTalonFX(TunerConstants.BackRight));
+
+        shooter = new Shooter(new ShooterIOKrakens(62, 7));
 
         // The ModuleIOTalonFXS implementation provides an example implementation for
         // TalonFXS controller connected to a CANdi with a PWM encoder. The
@@ -183,6 +189,11 @@ public class RobotContainer {
                             new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
                     drive)
                 .ignoringDisable(true));
+
+    opcon.a().whileTrue(Commands.run(() -> shooter.quickWheelCommand(5)));
+    opcon.b().whileTrue(Commands.run(() -> shooter.quickWheelCommand(-5)));
+    opcon.x().whileTrue(Commands.run(() -> shooter.quickServoCommand(1)));
+    opcon.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(-1)));
   }
 
   /**
