@@ -17,5 +17,7 @@ public interface ShooterIO {
 
   public default void commandShooterSpeed(double speed) {}
 
+  public default void quickShooter(double voltz) {}
+
   public default void commandHoodPosition(double length) {}
 }
