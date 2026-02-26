@@ -16,6 +16,10 @@ public class FieldConstants {
   public static final double fieldLength = layout.getFieldLength(); // meters
   public static final double fieldWidth = layout.getFieldWidth();
 
+  public static Pose2d ip() {
+    return flip(new Pose2d(3.638476848602295, 0.821435809135437, Rotation2d.kZero));
+  }
+
   public static Translation3d hub() {
     return flip(
         new Translation3d(
