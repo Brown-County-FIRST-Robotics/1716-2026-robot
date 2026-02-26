@@ -30,7 +30,7 @@ public class TunerConstants {
   // output type specified by SwerveModuleConstants.SteerMotorClosedLoopOutput
   private static final Slot0Configs steerGains =
       new Slot0Configs()
-          .withKP(0.1)
+          .withKP(20)
           .withKI(0)
           .withKD(0)
           .withKS(0)
@@ -192,54 +192,58 @@ public class TunerConstants {
           TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>
       FrontLeft =
           ConstantCreator.createModuleConstants(
-              kFrontLeftSteerMotorId,
-              kFrontLeftDriveMotorId,
-              kFrontLeftEncoderId,
-              kFrontLeftEncoderOffset,
-              kFrontLeftXPos,
-              kFrontLeftYPos,
-              kInvertLeftSide,
-              kFrontLeftSteerMotorInverted,
-              kFrontLeftEncoderInverted);
+                  kFrontLeftSteerMotorId,
+                  kFrontLeftDriveMotorId,
+                  kFrontLeftEncoderId,
+                  kFrontLeftEncoderOffset,
+                  kFrontLeftXPos,
+                  kFrontLeftYPos,
+                  kInvertLeftSide,
+                  kFrontLeftSteerMotorInverted,
+                  kFrontLeftEncoderInverted)
+              .withDriveMotorInverted(false);
   public static final SwerveModuleConstants<
           TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>
       FrontRight =
           ConstantCreator.createModuleConstants(
-              kFrontRightSteerMotorId,
-              kFrontRightDriveMotorId,
-              kFrontRightEncoderId,
-              kFrontRightEncoderOffset,
-              kFrontRightXPos,
-              kFrontRightYPos,
-              kInvertRightSide,
-              kFrontRightSteerMotorInverted,
-              kFrontRightEncoderInverted);
+                  kFrontRightSteerMotorId,
+                  kFrontRightDriveMotorId,
+                  kFrontRightEncoderId,
+                  kFrontRightEncoderOffset,
+                  kFrontRightXPos,
+                  kFrontRightYPos,
+                  kInvertRightSide,
+                  kFrontRightSteerMotorInverted,
+                  kFrontRightEncoderInverted)
+              .withDriveMotorInverted(true);
   public static final SwerveModuleConstants<
           TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>
       BackLeft =
           ConstantCreator.createModuleConstants(
-              kBackLeftSteerMotorId,
-              kBackLeftDriveMotorId,
-              kBackLeftEncoderId,
-              kBackLeftEncoderOffset,
-              kBackLeftXPos,
-              kBackLeftYPos,
-              kInvertLeftSide,
-              kBackLeftSteerMotorInverted,
-              kBackLeftEncoderInverted);
+                  kBackLeftSteerMotorId,
+                  kBackLeftDriveMotorId,
+                  kBackLeftEncoderId,
+                  kBackLeftEncoderOffset,
+                  kBackLeftXPos,
+                  kBackLeftYPos,
+                  kInvertLeftSide,
+                  kBackLeftSteerMotorInverted,
+                  kBackLeftEncoderInverted)
+              .withDriveMotorInverted(false);
   public static final SwerveModuleConstants<
           TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>
       BackRight =
           ConstantCreator.createModuleConstants(
-              kBackRightSteerMotorId,
-              kBackRightDriveMotorId,
-              kBackRightEncoderId,
-              kBackRightEncoderOffset,
-              kBackRightXPos,
-              kBackRightYPos,
-              kInvertRightSide,
-              kBackRightSteerMotorInverted,
-              kBackRightEncoderInverted);
+                  kBackRightSteerMotorId,
+                  kBackRightDriveMotorId,
+                  kBackRightEncoderId,
+                  kBackRightEncoderOffset,
+                  kBackRightXPos,
+                  kBackRightYPos,
+                  kInvertRightSide,
+                  kBackRightSteerMotorInverted,
+                  kBackRightEncoderInverted)
+              .withDriveMotorInverted(false);
 
   /**
    * Creates a CommandSwerveDrivetrain instance. This should only be called once in your robot

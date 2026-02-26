@@ -7,6 +7,7 @@
 
 package frc.robot;
 
+import com.ctre.phoenix6.CANBus;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.util.FileVersionException;
@@ -25,6 +26,13 @@ import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
+import frc.robot.subsystems.rollers.Rollers;
+import frc.robot.subsystems.rollers.RollersIOKraken;
+import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.shooter.ShooterIOKrakens;
+import frc.robot.subsystems.vision.Quest;
+import frc.robot.subsystems.vision.QuestIOQuest;
+import gg.questnav.questnav.QuestNav;
 import java.io.IOException;
 import org.json.simple.parser.ParseException;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
@@ -38,15 +46,19 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 public class RobotContainer {
   // Subsystems
   private final Drive drive;
-
+  private final Quest qwest;
+  private Shooter shooter;
+  private Rollers rollers;
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
+  private final CommandXboxController opcon = new CommandXboxController(1);
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
+    qwest = new Quest(new QuestIOQuest(new QuestNav()));
     switch (Constants.currentMode) {
       case REAL:
         // Real robot, instantiate hardware IO implementations
@@ -55,17 +67,18 @@ public class RobotContainer {
         drive =
             new Drive(
                 new GyroIO() {
-
                   @Override
                   public void updateInputs(GyroIOInputs inputs) {
-                    inputs.connected = true;
-                    inputs.yawPosition = Rotation2d.kZero;
+                    inputs.connected = qwest.connected();
+                    inputs.yawPosition = qwest.gyroLikeYaw();
                   }
                 },
                 new ModuleIOTalonFX(TunerConstants.FrontLeft),
                 new ModuleIOTalonFX(TunerConstants.FrontRight),
                 new ModuleIOTalonFX(TunerConstants.BackLeft),
                 new ModuleIOTalonFX(TunerConstants.BackRight));
+        rollers = new Rollers(new RollersIOKraken(new CANBus("1716_canivore"), 0, 35));
+        shooter = new Shooter(new ShooterIOKrakens(62, 9));
 
         // The ModuleIOTalonFXS implementation provides an example implementation for
         // TalonFXS controller connected to a CANdi with a PWM encoder. The
@@ -111,7 +124,7 @@ public class RobotContainer {
 
     // Set up auto routines
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
-
+    autoChooser.addDefaultOption("dont do anything", Commands.none());
     // Set up SysId routines
     autoChooser.addOption(
         "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
@@ -178,19 +191,19 @@ public class RobotContainer {
             () -> -controller.getRightX()));
 
     // Lock to 0° when A button is held
-    controller
-        .a()
-        .whileTrue(
-            DriveCommands.joystickDriveAtAngle(
-                drive,
-                () -> -controller.getLeftY(),
-                () -> -controller.getLeftX(),
-                () -> Rotation2d.kZero));
+    //    controller
+    //        .a()
+    //        .whileTrue(
+    //            DriveCommands.joystickDriveAtAngle(
+    //                drive,
+    //                () -> -controller.getLeftY(),
+    //                () -> -controller.getLeftX(),
+    //                () -> Rotation2d.kZero));
 
     // Switch to X pattern when X button is pressed
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
-    // Reset gyro to 0° when B button is pressed
+    // Reset gyro to 0° when B button is pressed
     controller
         .b()
         .onTrue(
@@ -200,6 +213,42 @@ public class RobotContainer {
                             new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
                     drive)
                 .ignoringDisable(true));
+
+    opcon.a().whileTrue(Commands.run(() -> shooter.quickWheelCommand(7.5), shooter));
+    // opcon.b().whileTrue(Commands.run(() -> shooter.quickWheelCommand(7.5), shooter));
+    opcon.x().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
+    opcon.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
+
+    opcon.leftBumper().whileTrue(Commands.run(() -> rollers.jset(4), rollers));
+    opcon.rightBumper().whileTrue(Commands.run(() -> rollers.jset(-4), rollers));
+    opcon
+        .leftStick()
+        .whileTrue(
+            Commands.run(
+                () -> {
+                  shooter.quickWheelCommand(0);
+                  rollers.jset(0.0);
+                },
+                rollers,
+                shooter));
+
+    controller.a().whileTrue(Commands.run(() -> shooter.quickWheelCommand(5), shooter));
+    // controller.b().whileTrue(Commands.run(() -> shooter.quickWheelCommand(-5), shooter));
+    controller.x().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
+    controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
+
+    controller.leftBumper().whileTrue(Commands.run(() -> rollers.jset(4), rollers));
+    controller.rightBumper().whileTrue(Commands.run(() -> rollers.jset(-4), rollers));
+    controller
+        .leftStick()
+        .whileTrue(
+            Commands.run(
+                () -> {
+                  shooter.quickWheelCommand(0);
+                  rollers.jset(0.0);
+                },
+                rollers,
+                shooter));
   }
 
   /**
