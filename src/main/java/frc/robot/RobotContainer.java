@@ -196,8 +196,8 @@ public class RobotContainer {
 
     opcon.a().whileTrue(Commands.run(() -> shooter.quickWheelCommand(7.5), shooter));
     // opcon.b().whileTrue(Commands.run(() -> shooter.quickWheelCommand(7.5), shooter));
-    opcon.x().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
-    opcon.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
+    opcon.x().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
+    opcon.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(-1), shooter));
 
     opcon.leftBumper().whileTrue(Commands.run(() -> rollers.jset(4), rollers));
     opcon.rightBumper().whileTrue(Commands.run(() -> rollers.jset(-4), rollers));

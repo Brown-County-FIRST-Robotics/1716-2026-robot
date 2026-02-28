@@ -12,7 +12,7 @@ java {
     sourceCompatibility = javaVersion
     targetCompatibility = javaVersion
 }
-build.dependsOn(spotlessApply);
+//build.dependsOn(spotlessApply);
 
 def ROBOT_MAIN_CLASS = "frc.robot.Main"
 
@@ -184,7 +184,7 @@ def writeGitData =tasks.create("writeGitData") {
                 "deployer.txt"
                 ).text = userstdout.toString().trim()
     }}
-writeGitData.dependsOn(spotlessApply);
+//writeGitData.dependsOn(spotlessApply);
 
 deploy.targets.roborio.artifacts.frcStaticFileDeploy.dependsOn(writeGitData)
 

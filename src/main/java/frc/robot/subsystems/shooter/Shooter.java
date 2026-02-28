@@ -11,6 +11,7 @@ import org.littletonrobotics.junction.Logger;
 public class Shooter implements Subsystem {
   double abs_rel_turret_offset = 0.0;
   Rotation2d hoodAngle = Rotation2d.kZero;
+double lhp=1.0;
   private static final double hoodLegLength1 = 4.87;
   private static final double hoodLegLength2 = 8.20;
   private static final double hoodZero = Math.asin(1.75 / 9);
@@ -90,7 +91,8 @@ public class Shooter implements Subsystem {
   }
 
   public void quickServoCommand(double increment) {
-    io.commandHoodPosition(increment);
+lhp=lhp+0.1*increment;
+    io.commandHoodPosition(lhp);
   }
 
   public Shooter(ShooterIO io) {
