@@ -32,6 +32,7 @@ import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterIOKrakens;
 import frc.robot.subsystems.vision.Quest;
 import frc.robot.subsystems.vision.QuestIOQuest;
+import frc.robot.subsystems.vision.VisionWithQuest;
 import gg.questnav.questnav.QuestNav;
 import java.io.IOException;
 import org.json.simple.parser.ParseException;
@@ -47,6 +48,7 @@ public class RobotContainer {
   // Subsystems
   private final Drive drive;
   private final Quest qwest;
+  private final VisionWithQuest qwestVision;
   private Shooter shooter;
   private Rollers rollers;
   // Controller
@@ -122,6 +124,8 @@ public class RobotContainer {
         break;
     }
 
+    qwestVision = new VisionWithQuest(drive, null);
+
     // Set up auto routines
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
     autoChooser.addDefaultOption("dont do anything", Commands.none());
@@ -141,11 +145,12 @@ public class RobotContainer {
     autoChooser.addOption(
         "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
 
-    
     // ########## Choreo autos ##########
     try {
       // Single-side autos that don't need to be mirrored
-      autoChooser.addOption("Choreo - Middle -> climb", AutoBuilder.followPath(PathPlannerPath.fromChoreoTrajectory("MidToClimb")));
+      autoChooser.addOption(
+          "Choreo - Middle -> climb",
+          AutoBuilder.followPath(PathPlannerPath.fromChoreoTrajectory("MidToClimb")));
 
       // Both-side autos
 
@@ -154,19 +159,20 @@ public class RobotContainer {
       // side is the same as the human player. In Choreo as of 2/20/26, that is
       // the bottom left corner.
       String[][] items = {
-          // {name, description}
-          {"FuelToucher", "Disturb balls -> shoot"},
-          // Add more here here
+        // {name, description}
+        {"FuelToucher", "Disturb balls -> shoot"},
+        // Add more here here
       };
 
       for (String[] item : items) {
-          String name = item[0];
-          String desc = item[1];
+        String name = item[0];
+        String desc = item[1];
 
         PathPlannerPath path = PathPlannerPath.fromChoreoTrajectory(name);
         autoChooser.addOption("Choreo - Human player side - " + desc, AutoBuilder.followPath(path));
-        autoChooser.addOption("Choreo - Depot side - " + desc, AutoBuilder.followPath(path.mirrorPath()));
-      } 
+        autoChooser.addOption(
+            "Choreo - Depot side - " + desc, AutoBuilder.followPath(path.mirrorPath()));
+      }
     } catch (FileVersionException | IOException | ParseException e) {
       e.printStackTrace();
     }
