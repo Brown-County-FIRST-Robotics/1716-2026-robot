@@ -15,7 +15,6 @@ public interface RollersIO {
     public double kickerAppliedCurrent = 0.0;
   }
 
-  default void justSet(double volt) {}
 
   default void updateInputs(RollersIOInputs inputs) {}
 

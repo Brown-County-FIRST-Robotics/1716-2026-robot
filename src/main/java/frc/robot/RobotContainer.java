@@ -50,8 +50,8 @@ public class RobotContainer {
   private Shooter shooter;
   private Rollers rollers;
   // Controller
-  private final CommandXboxController controller = new CommandXboxController(0);
-  private final CommandXboxController opcon = new CommandXboxController(1);
+  private final CommandXboxController driverController = new CommandXboxController(0);
+  private final CommandXboxController operatorController = new CommandXboxController(1);
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
@@ -141,11 +141,12 @@ public class RobotContainer {
     autoChooser.addOption(
         "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
 
-    
     // ########## Choreo autos ##########
     try {
       // Single-side autos that don't need to be mirrored
-      autoChooser.addOption("Choreo - Middle -> climb", AutoBuilder.followPath(PathPlannerPath.fromChoreoTrajectory("MidToClimb")));
+      autoChooser.addOption(
+          "Choreo - Middle -> climb",
+          AutoBuilder.followPath(PathPlannerPath.fromChoreoTrajectory("MidToClimb")));
 
       // Both-side autos
 
@@ -154,19 +155,20 @@ public class RobotContainer {
       // side is the same as the human player. In Choreo as of 2/20/26, that is
       // the bottom left corner.
       String[][] items = {
-          // {name, description}
-          {"FuelToucher", "Disturb balls -> shoot"},
-          // Add more here here
+        // {name, description}
+        {"FuelToucher", "Disturb balls -> shoot"},
+        // Add more here here
       };
 
       for (String[] item : items) {
-          String name = item[0];
-          String desc = item[1];
+        String name = item[0];
+        String desc = item[1];
 
         PathPlannerPath path = PathPlannerPath.fromChoreoTrajectory(name);
         autoChooser.addOption("Choreo - Human player side - " + desc, AutoBuilder.followPath(path));
-        autoChooser.addOption("Choreo - Depot side - " + desc, AutoBuilder.followPath(path.mirrorPath()));
-      } 
+        autoChooser.addOption(
+            "Choreo - Depot side - " + desc, AutoBuilder.followPath(path.mirrorPath()));
+      }
     } catch (FileVersionException | IOException | ParseException e) {
       e.printStackTrace();
     }
@@ -186,25 +188,25 @@ public class RobotContainer {
     drive.setDefaultCommand(
         DriveCommands.joystickDrive(
             drive,
-            () -> -controller.getLeftY(),
-            () -> -controller.getLeftX(),
-            () -> -controller.getRightX()));
+            () -> -driverController.getLeftY(),
+            () -> -driverController.getLeftX(),
+            () -> -driverController.getRightX()));
 
     // Lock to 0° when A button is held
-    //    controller
-    //        .a()
-    //        .whileTrue(
-    //            DriveCommands.joystickDriveAtAngle(
-    //                drive,
-    //                () -> -controller.getLeftY(),
-    //                () -> -controller.getLeftX(),
-    //                () -> Rotation2d.kZero));
+       driverController
+           .a()
+           .whileTrue(
+               DriveCommands.joystickDriveAtAngle(
+                   drive,
+                   () -> -driverController.getLeftY(),
+                   () -> -driverController.getLeftX(),
+                   () -> Rotation2d.kZero));
 
     // Switch to X pattern when X button is pressed
-    controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+    driverController.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
     // Reset gyro to 0° when B button is pressed
-    controller
+    driverController
         .b()
         .onTrue(
             Commands.runOnce(
@@ -214,41 +216,20 @@ public class RobotContainer {
                     drive)
                 .ignoringDisable(true));
 
-    opcon.a().whileTrue(Commands.run(() -> shooter.quickWheelCommand(7.5), shooter));
-    // opcon.b().whileTrue(Commands.run(() -> shooter.quickWheelCommand(7.5), shooter));
-    opcon.x().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
-    opcon.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
+    operatorController.a().whileTrue(Commands.run(() -> shooter.quickWheelCommand(7.5), shooter));
+    operatorController.x().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
+    operatorController.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
 
-    opcon.leftBumper().whileTrue(Commands.run(() -> rollers.jset(4), rollers));
-    opcon.rightBumper().whileTrue(Commands.run(() -> rollers.jset(-4), rollers));
-    opcon
+    operatorController
         .leftStick()
         .whileTrue(
             Commands.run(
                 () -> {
                   shooter.quickWheelCommand(0);
-                  rollers.jset(0.0);
                 },
                 rollers,
                 shooter));
 
-    controller.a().whileTrue(Commands.run(() -> shooter.quickWheelCommand(5), shooter));
-    // controller.b().whileTrue(Commands.run(() -> shooter.quickWheelCommand(-5), shooter));
-    controller.x().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
-    controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
-
-    controller.leftBumper().whileTrue(Commands.run(() -> rollers.jset(4), rollers));
-    controller.rightBumper().whileTrue(Commands.run(() -> rollers.jset(-4), rollers));
-    controller
-        .leftStick()
-        .whileTrue(
-            Commands.run(
-                () -> {
-                  shooter.quickWheelCommand(0);
-                  rollers.jset(0.0);
-                },
-                rollers,
-                shooter));
   }
 
   /**

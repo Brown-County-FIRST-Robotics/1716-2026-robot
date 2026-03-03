@@ -62,11 +62,6 @@ public class ShooterIOKrakens implements ShooterIO {
   }
 
   @Override
-  public void quickShooter(double voltz) {
-    shooterMotor.setControl(new VoltageOut(voltz));
-  }
-
-  @Override
   public void commandHoodPosition(double length) {
     hoodServo.setPulseTimeMicroseconds((int) (1000 + 1000 * (length / 2)));
   }

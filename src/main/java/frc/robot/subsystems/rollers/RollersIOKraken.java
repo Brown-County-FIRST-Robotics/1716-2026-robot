@@ -24,12 +24,12 @@ public class RollersIOKraken implements RollersIO {
   StatusSignal<Voltage> kickerAppliedVolts;
 
   public RollersIOKraken(CANBus canbus, int rollerID, int kickerID) {
-    // rollerMotor = new TalonFX(rollerID, canbus);
+    rollerMotor = new TalonFX(rollerID, canbus);
     kickerMotor = new TalonFX(kickerID, canbus);
-    // rollerVelocity = rollerMotor.getVelocity();
-    // rollerCurrent = rollerMotor.getStatorCurrent();
-    // rollerCurrent.setUpdateFrequency(50);
-    //  rollerAppliedVolts = rollerMotor.getMotorVoltage();
+    rollerVelocity = rollerMotor.getVelocity();
+    rollerCurrent = rollerMotor.getStatorCurrent();
+    rollerCurrent.setUpdateFrequency(50);
+    rollerAppliedVolts = rollerMotor.getMotorVoltage();
     kickerVelocity = kickerMotor.getVelocity();
     kickerCurrent = kickerMotor.getStatorCurrent();
     kickerCurrent.setUpdateFrequency(50);
@@ -41,13 +41,13 @@ public class RollersIOKraken implements RollersIO {
             .withTorqueClosedLoopRampPeriod(0.5));
     kicker_cfgr.apply(
         new Slot0Configs().withKV(12.0 / (7758.0 / 60.0)).withKP(1.2 * 12.0 / (7758.0 / 60.0)));
-    // var roller_cfgr = rollerMotor.getConfigurator();
-    // roller_cfgr.apply(
-    //  new ClosedLoopRampsConfigs()
-    //    .withDutyCycleClosedLoopRampPeriod(0.5)
-    //  .withTorqueClosedLoopRampPeriod(0.5));
-    // roller_cfgr.apply(
-    //  new Slot0Configs().withKV(12.0 / (7758.0 / 60.0)).withKP(0.8 * 12.0 / (7758.0 / 60.0)));
+    var roller_cfgr = rollerMotor.getConfigurator();
+    roller_cfgr.apply(
+        new ClosedLoopRampsConfigs()
+            .withDutyCycleClosedLoopRampPeriod(0.5)
+            .withTorqueClosedLoopRampPeriod(0.5));
+    roller_cfgr.apply(
+        new Slot0Configs().withKV(12.0 / (7758.0 / 60.0)).withKP(0.8 * 12.0 / (7758.0 / 60.0)));
   }
 
   @Override
@@ -57,23 +57,23 @@ public class RollersIOKraken implements RollersIO {
 
   @Override
   public void updateInputs(RollersIOInputs inputs) {
-    //    var rollerStatus =
-    //        BaseStatusSignal.refreshAll(rollerCurrent, rollerAppliedVolts, rollerVelocity);
+    var rollerStatus =
+        BaseStatusSignal.refreshAll(rollerCurrent, rollerAppliedVolts, rollerVelocity);
     var kickerStatus =
         BaseStatusSignal.refreshAll(kickerCurrent, kickerAppliedVolts, kickerVelocity);
     inputs.kickerConnected = kickerStatus.isOK();
-    //    inputs.rollersConnected = rollerStatus.isOK();
+    inputs.rollersConnected = rollerStatus.isOK();
     inputs.kickerAppliedVolts = kickerAppliedVolts.getValueAsDouble();
     inputs.kickerVelocity = kickerVelocity.getValue().in(Units.RotationsPerSecond);
     inputs.kickerAppliedCurrent = kickerCurrent.getValueAsDouble();
-    //    inputs.rollerAppliedVolts = rollerAppliedVolts.getValueAsDouble();
-    //    inputs.rollerVelocity = rollerVelocity.getValue().in(Units.RotationsPerSecond);
-    //    inputs.rollerAppliedCurrent = rollerCurrent.getValueAsDouble();
+    inputs.rollerAppliedVolts = rollerAppliedVolts.getValueAsDouble();
+    inputs.rollerVelocity = rollerVelocity.getValue().in(Units.RotationsPerSecond);
+    inputs.rollerAppliedCurrent = rollerCurrent.getValueAsDouble();
   }
 
   @Override
   public void commandSpeed(double rollerVelocity, double kicker_velocity) {
     kickerMotor.setControl(new VelocityVoltage(kicker_velocity));
-    //  rollerMotor.setControl(new VelocityVoltage(rollerVelocity));
+    rollerMotor.setControl(new VelocityVoltage(rollerVelocity));
   }
 }

@@ -85,8 +85,8 @@ public class Shooter implements Subsystem {
                     / (2.0 * hoodLegLength1 * hoodLegLength2)));
   }
 
-  public void quickWheelCommand(double volts) {
-    io.quickShooter(volts);
+  public void quickWheelCommand(double velocity) {
+    io.commandShooterSpeed(velocity);
   }
 
   public void quickServoCommand(double increment) {
