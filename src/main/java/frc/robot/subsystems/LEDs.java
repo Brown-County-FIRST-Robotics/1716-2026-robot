@@ -23,9 +23,9 @@ public class LEDs extends PeriodicRunnable {
 
   LEDMode mode;
 
-  public LEDs() {
+  public LEDs(final int port) {
     super(); // Super call adds it to the registry, which calls the periodic method every tick
-    leds = new AddressableLED(5); // LEDs on port 5
+    leds = new AddressableLED(port);
     ledBuff = new AddressableLEDBuffer(280); // Encode up to 280 of them
     leds.setLength(ledBuff.getLength());
     leds.setData(ledBuff);
