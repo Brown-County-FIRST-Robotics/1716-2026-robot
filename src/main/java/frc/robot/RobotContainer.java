@@ -81,8 +81,8 @@ public class RobotContainer {
                 new ModuleIOTalonFX(TunerConstants.BackLeft),
                 new ModuleIOTalonFX(TunerConstants.BackRight));
         shooter = new Shooter(new ShooterIOKrakens(62, 9));
-        rollers = new Rollers(new RollersIOKraken(new CANBus("1716_canivore"), 0, 35));
-        intake = new Intake(new IntakeIOKraken(new CANBus("1716_canivore"), -1, -1));
+        rollers = new Rollers(new RollersIOKraken(new CANBus("1716_canivore"), -1, 37));
+        intake = new Intake(new IntakeIOKraken(new CANBus("1716_canivore"), 40, -1));
 
         // The ModuleIOTalonFXS implementation provides an example implementation for
         // TalonFXS controller connected to a CANdi with a PWM encoder. The
@@ -225,8 +225,8 @@ public class RobotContainer {
     opcon.x().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
     opcon.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
 
-    opcon.leftBumper().whileTrue(Commands.run(() -> rollers.jset(4), rollers));
-    opcon.rightBumper().whileTrue(Commands.run(() -> rollers.jset(-4), rollers));
+    opcon.leftBumper().whileTrue(Commands.run(() -> rollers.jset(6), rollers));
+    opcon.rightBumper().whileTrue(Commands.run(() -> rollers.jset(-6), rollers));
     opcon
         .leftStick()
         .whileTrue(
@@ -238,10 +238,20 @@ public class RobotContainer {
                 rollers,
                 shooter));
 
-    controller.a().whileTrue(Commands.run(() -> shooter.quickWheelCommand(5), shooter));
+    controller.a().whileTrue(Commands.run(() -> shooter.quickWheelCommand(12), shooter));
     // controller.b().whileTrue(Commands.run(() -> shooter.quickWheelCommand(-5), shooter));
     controller.x().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
     controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
+
+    controller.rightStick().whileTrue(Commands.run(() -> rollers.jset(6), rollers));
+
+    controller
+        .rightTrigger(0.9)
+        .and(controller.leftTrigger(0.9))
+        .onTrue(
+            Commands.runOnce(
+                () ->
+                    drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d()))));
 
     // controller.leftBumper().whileTrue(Commands.run(() -> rollers.jset(4), rollers));
     // controller.rightBumper().whileTrue(Commands.run(() -> rollers.jset(-4), rollers));
@@ -257,8 +267,8 @@ public class RobotContainer {
                 shooter));
 
     // Intake/hopper control
-    controller.rightBumper().whileTrue(intake.extendHopper());
-    controller.leftBumper().whileTrue(intake.retractHopper());
+    // controller.rightBumper().whileTrue(intake.extendHopper());
+    // controller.leftBumper().whileTrue(intake.retractHopper());
     controller.rightBumper().whileTrue(intake.intake());
     controller.leftBumper().whileTrue(intake.intakeReverse());
   }
