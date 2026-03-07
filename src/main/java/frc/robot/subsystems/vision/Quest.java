@@ -1,10 +1,10 @@
 package frc.robot.subsystems.vision;
 
 import edu.wpi.first.math.geometry.*;
-import edu.wpi.first.wpilibj2.command.Subsystem;
+import frc.robot.utils.PeriodicRunnable;
 import org.littletonrobotics.junction.Logger;
 
-public class Quest implements Subsystem {
+public class Quest extends PeriodicRunnable {
   QuestIO io;
   QuestIOInputsAutoLogged inputs = new QuestIOInputsAutoLogged();
   private static final Transform3d posOnRobot =
@@ -12,6 +12,7 @@ public class Quest implements Subsystem {
   private Pose3d realPose = new Pose3d();
 
   public Quest(QuestIO io) {
+    super();
     this.io = io;
   }
 
