@@ -62,7 +62,7 @@ public class Intake extends SubsystemBase {
   @Override
   public void periodic() {
     io.updateInputs(inputs);
-    Logger.processInputs("rollers", inputs);
+    Logger.processInputs("intake", inputs);
     intakeDisconnectedAlert.set(intakeConnectedDebouncer.calculate(inputs.intakeConnected));
     extendDisconnectedAlert.set(extendConnectedDebouncer.calculate(inputs.extendConnected));
   }
