@@ -23,8 +23,6 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
-import frc.robot.subsystems.drive.ModuleIO;
-import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.IntakeIOKraken;
@@ -69,6 +67,7 @@ public class RobotContainer {
         // a CANcoder
         drive =
             new Drive(
+                qwest,
                 new GyroIO() {
                   @Override
                   public void updateInputs(GyroIOInputs inputs) {
@@ -81,8 +80,8 @@ public class RobotContainer {
                 new ModuleIOTalonFX(TunerConstants.BackLeft),
                 new ModuleIOTalonFX(TunerConstants.BackRight));
         shooter = new Shooter(new ShooterIOKrakens(62, 9));
-        rollers = new Rollers(new RollersIOKraken(new CANBus("1716_canivore"), 0, 35));
-        intake = new Intake(new IntakeIOKraken(new CANBus("1716_canivore"), -1, -1));
+        rollers = new Rollers(new RollersIOKraken(new CANBus("1716_canivore"), -1, 37));
+        intake = new Intake(new IntakeIOKraken(new CANBus("1716_canivore"), 40, -1));
 
         // The ModuleIOTalonFXS implementation provides an example implementation for
         // TalonFXS controller connected to a CANdi with a PWM encoder. The
@@ -102,27 +101,31 @@ public class RobotContainer {
         // new ModuleIOTalonFXS(TunerConstants.BackLeft),
         // new ModuleIOTalonFXS(TunerConstants.BackRight));
         break;
+        /*
+        case SIM:
+          // Sim robot, instantiate physics sim IO implementations
+          drive =
+              new Drive(
+                  new GyroIO() {},
+                  new ModuleIOSim(TunerConstants.FrontLeft),
+                  new ModuleIOSim(TunerConstants.FrontRight),
+                  new ModuleIOSim(TunerConstants.BackLeft),
+                  new ModuleIOSim(TunerConstants.BackRight));
+          break;
 
-      case SIM:
-        // Sim robot, instantiate physics sim IO implementations
-        drive =
-            new Drive(
-                new GyroIO() {},
-                new ModuleIOSim(TunerConstants.FrontLeft),
-                new ModuleIOSim(TunerConstants.FrontRight),
-                new ModuleIOSim(TunerConstants.BackLeft),
-                new ModuleIOSim(TunerConstants.BackRight));
-        break;
-
+        default:
+          // Replayed robot, disable IO implementations
+          drive =
+              new Drive(
+                  new GyroIO() {},
+                  new ModuleIO() {},
+                  new ModuleIO() {},
+                  new ModuleIO() {},
+                  new ModuleIO() {});
+          break;*/
       default:
-        // Replayed robot, disable IO implementations
-        drive =
-            new Drive(
-                new GyroIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {});
+        // TODO: Make quest-based things work in simulation/replay
+        drive = null;
         break;
     }
 
@@ -189,12 +192,13 @@ public class RobotContainer {
    */
   private void configureButtonBindings() {
     // Default command, normal field-relative drive
+    // with 4x slowmode on op's right trigger
     drive.setDefaultCommand(
         DriveCommands.joystickDrive(
             drive,
-            () -> -controller.getLeftY(),
-            () -> -controller.getLeftX(),
-            () -> -controller.getRightX()));
+            () -> -controller.getLeftY() / (opcon.rightTrigger().getAsBoolean() ? 2 : 1),
+            () -> -controller.getLeftX() / (opcon.rightTrigger().getAsBoolean() ? 2 : 1),
+            () -> -controller.getRightX() / (opcon.rightTrigger().getAsBoolean() ? 2 : 1)));
 
     // Lock to 0° when A button is held
     //    controller
@@ -225,8 +229,8 @@ public class RobotContainer {
     opcon.x().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
     opcon.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
 
-    opcon.leftBumper().whileTrue(Commands.run(() -> rollers.jset(4), rollers));
-    opcon.rightBumper().whileTrue(Commands.run(() -> rollers.jset(-4), rollers));
+    opcon.leftBumper().whileTrue(Commands.run(() -> rollers.jset(6), rollers));
+    opcon.rightBumper().whileTrue(Commands.run(() -> rollers.jset(-6), rollers));
     opcon
         .leftStick()
         .whileTrue(
@@ -238,10 +242,24 @@ public class RobotContainer {
                 rollers,
                 shooter));
 
-    controller.a().whileTrue(Commands.run(() -> shooter.quickWheelCommand(5), shooter));
     // controller.b().whileTrue(Commands.run(() -> shooter.quickWheelCommand(-5), shooter));
     controller.x().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
     controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
+
+    controller
+        .rightStick()
+        .onTrue(
+            Commands.run(() -> shooter.quickWheelCommand(12), shooter)
+                .alongWith(
+                    Commands.waitSeconds(1.5).andThen(Commands.run(() -> rollers.setSpeeds(0, 10), rollers))));
+
+    controller
+        .rightTrigger(0.9)
+        .and(controller.leftTrigger(0.9))
+        .onTrue(
+            Commands.runOnce(
+                () ->
+                    drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d()))));
 
     // controller.leftBumper().whileTrue(Commands.run(() -> rollers.jset(4), rollers));
     // controller.rightBumper().whileTrue(Commands.run(() -> rollers.jset(-4), rollers));
@@ -257,10 +275,10 @@ public class RobotContainer {
                 shooter));
 
     // Intake/hopper control
-    controller.rightBumper().whileTrue(intake.extendHopper());
-    controller.leftBumper().whileTrue(intake.retractHopper());
+    // controller.rightBumper().whileTrue(intake.extendHopper());
+    // controller.leftBumper().whileTrue(intake.retractHopper());
     controller.rightBumper().whileTrue(intake.intake());
-    controller.leftBumper().whileTrue(intake.intakeReverse());
+    controller.leftBumper().whileTrue(intake.intakeStop());
   }
 
   /**

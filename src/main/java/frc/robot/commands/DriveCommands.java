@@ -87,11 +87,14 @@ public class DriveCommands {
               DriverStation.getAlliance().isPresent()
                   && DriverStation.getAlliance().get() == Alliance.Red;
           drive.runVelocity(
-              ChassisSpeeds.fromFieldRelativeSpeeds(
-                  speeds,
-                  isFlipped
-                      ? drive.getRotation().plus(new Rotation2d(Math.PI))
-                      : drive.getRotation()));
+              speeds
+              // TODO: Field oriented code
+              // ChassisSpeeds.fromFieldRelativeSpeeds(
+              //     speeds,
+              //     isFlipped
+              //         ? drive.quest.getPose().getRotation().plus(new Rotation2d(Math.PI))
+              //         : drive.quest.getPose().getRotation())
+              );
         },
         drive);
   }
@@ -138,11 +141,13 @@ public class DriveCommands {
                   DriverStation.getAlliance().isPresent()
                       && DriverStation.getAlliance().get() == Alliance.Red;
               drive.runVelocity(
-                  ChassisSpeeds.fromFieldRelativeSpeeds(
-                      speeds,
-                      isFlipped
-                          ? drive.getRotation().plus(new Rotation2d(Math.PI))
-                          : drive.getRotation()));
+                  speeds
+                  // ChassisSpeeds.fromFieldRelativeSpeeds(
+                  //     speeds,
+                  //     isFlipped
+                  //         ? drive.getRotation().plus(new Rotation2d(Math.PI))
+                  //         : drive.getRotation())
+                  );
             },
             drive)
 
