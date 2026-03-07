@@ -17,7 +17,7 @@ public class FieldConstants {
   public static final double fieldWidth = layout.getFieldWidth();
 
   public static Pose2d ip() {
-    return flip(new Pose2d(3.638476848602295, 0.821435809135437, Rotation2d.kZero));
+    return flip(new Pose2d(3.5607194900512695, 4.050412178039551, Rotation2d.kZero));
   }
 
   public static Translation3d hub() {
