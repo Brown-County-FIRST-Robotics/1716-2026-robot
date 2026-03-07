@@ -42,6 +42,7 @@ import frc.robot.Constants;
 import frc.robot.Constants.Mode;
 import frc.robot.FieldConstants;
 import frc.robot.generated.TunerConstants;
+import frc.robot.subsystems.vision.Quest;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -78,6 +79,9 @@ public class Drive extends SubsystemBase {
           getModuleTranslations());
 
   static final Lock odometryLock = new ReentrantLock();
+
+  public final Quest quest;
+
   private final GyroIO gyroIO;
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final Module[] modules = new Module[4]; // FL, FR, BL, BR
@@ -99,11 +103,13 @@ public class Drive extends SubsystemBase {
           kinematics, rawGyroRotation, lastModulePositions, FieldConstants.ip());
 
   public Drive(
+      Quest quest,
       GyroIO gyroIO,
       ModuleIO flModuleIO,
       ModuleIO frModuleIO,
       ModuleIO blModuleIO,
       ModuleIO brModuleIO) {
+    this.quest = quest;
     this.gyroIO = gyroIO;
     modules[0] = new Module(flModuleIO, 0, TunerConstants.FrontLeft);
     modules[1] = new Module(frModuleIO, 1, TunerConstants.FrontRight);
@@ -118,7 +124,7 @@ public class Drive extends SubsystemBase {
 
     // Configure AutoBuilder for PathPlanner
     AutoBuilder.configure(
-        this::getPose,
+        this.quest::getPose,
         this::setPose,
         this::getChassisSpeeds,
         this::runVelocity,
