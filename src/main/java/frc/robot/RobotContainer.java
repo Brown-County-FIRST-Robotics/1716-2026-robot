@@ -81,7 +81,7 @@ public class RobotContainer {
                 new ModuleIOTalonFX(TunerConstants.BackLeft),
                 new ModuleIOTalonFX(TunerConstants.BackRight));
         shooter = new Shooter(new ShooterIOKrakens(62, 9));
-        rollers = new Rollers(new RollersIOKraken(new CANBus("1716_canivore"), 0, 35));
+        rollers = new Rollers(new RollersIOKraken(new CANBus("1716_canivore"), -1, 37));
         intake = new Intake(new IntakeIOKraken(new CANBus("1716_canivore"), -1, -1));
 
         // The ModuleIOTalonFXS implementation provides an example implementation for
@@ -225,8 +225,8 @@ public class RobotContainer {
     opcon.x().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
     opcon.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
 
-    opcon.leftBumper().whileTrue(Commands.run(() -> rollers.jset(4), rollers));
-    opcon.rightBumper().whileTrue(Commands.run(() -> rollers.jset(-4), rollers));
+    // opcon.leftBumper().whileTrue(Commands.run(() -> rollers.jset(4), rollers));
+    // opcon.rightBumper().whileTrue(Commands.run(() -> rollers.jset(-4), rollers));
     opcon
         .leftStick()
         .whileTrue(
