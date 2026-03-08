@@ -7,7 +7,6 @@
 
 package frc.robot;
 
-import com.ctre.phoenix6.CANBus;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.util.FileVersionException;
@@ -82,8 +81,8 @@ public class RobotContainer {
                 new ModuleIOTalonFX(TunerConstants.BackLeft),
                 new ModuleIOTalonFX(TunerConstants.BackRight));
         shooter = new Shooter(new ShooterIOKrakens(62, 9));
-        rollers = new Rollers(new RollersIOKraken(new CANBus("1716_canivore"), -1, 37));
-        intake = new Intake(new IntakeIOKraken(new CANBus("1716_canivore"), 40, -1));
+        rollers = new Rollers(new RollersIOKraken(-1, 37));
+        intake = new Intake(new IntakeIOKraken(40, -1));
 
         // The ModuleIOTalonFXS implementation provides an example implementation for
         // TalonFXS controller connected to a CANdi with a PWM encoder. The

@@ -5,6 +5,7 @@
 
 package frc.robot;
 
+import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 
@@ -41,6 +42,9 @@ public final class OurConstants {
     /** Current limit for brushed motors */
     public static final int GENERIC_BRUSHED = 20;
   }
+
+  public static final String CAN_NAME = "1716_canivore";
+  public static final CANBus CAN_BUS = new CANBus(CAN_NAME);
 
   public static final double CONNECTED_DEBOUNCE_TIME = 0.5;
 

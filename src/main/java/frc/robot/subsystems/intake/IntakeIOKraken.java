@@ -1,7 +1,6 @@
 package frc.robot.subsystems.intake;
 
 import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
@@ -13,6 +12,7 @@ import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
+import frc.robot.OurConstants;
 
 public class IntakeIOKraken implements IntakeIO {
   TalonFX intakeMotor;
@@ -24,9 +24,9 @@ public class IntakeIOKraken implements IntakeIO {
   StatusSignal<Current> extendCurrent;
   StatusSignal<Voltage> extendAppliedVolts;
 
-  public IntakeIOKraken(CANBus canbus, int intakeID, int extendID) {
-    intakeMotor = new TalonFX(intakeID, canbus);
-    // extendMotor = new TalonFX(extendID, canbus);
+  public IntakeIOKraken(int intakeID, int extendID) {
+    intakeMotor = new TalonFX(intakeID, OurConstants.CAN_BUS);
+    // extendMotor = new TalonFX(extendID, OurConstants.CAN_BUS);
     intakeVelocity = intakeMotor.getVelocity();
     intakeCurrent = intakeMotor.getStatorCurrent();
     intakeCurrent.setUpdateFrequency(50);

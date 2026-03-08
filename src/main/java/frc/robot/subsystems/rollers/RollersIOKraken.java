@@ -1,7 +1,6 @@
 package frc.robot.subsystems.rollers;
 
 import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
@@ -12,6 +11,7 @@ import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
+import frc.robot.OurConstants;
 
 public class RollersIOKraken implements RollersIO {
   TalonFX rollerMotor;
@@ -23,9 +23,9 @@ public class RollersIOKraken implements RollersIO {
   StatusSignal<Current> kickerCurrent;
   StatusSignal<Voltage> kickerAppliedVolts;
 
-  public RollersIOKraken(CANBus canbus, int rollerID, int kickerID) {
-    // rollerMotor = new TalonFX(rollerID, canbus);
-    kickerMotor = new TalonFX(kickerID, canbus);
+  public RollersIOKraken(int rollerID, int kickerID) {
+    // rollerMotor = new TalonFX(rollerID, OurConstants.CAN_BUS);
+    kickerMotor = new TalonFX(kickerID, OurConstants.CAN_BUS);
     // rollerVelocity = rollerMotor.getVelocity();
     // rollerCurrent = rollerMotor.getStatorCurrent();
     // rollerCurrent.setUpdateFrequency(50);
