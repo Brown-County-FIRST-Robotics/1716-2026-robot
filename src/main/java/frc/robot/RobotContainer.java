@@ -13,6 +13,7 @@ import com.pathplanner.lib.util.FileVersionException;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -194,9 +195,9 @@ public class RobotContainer {
     drive.setDefaultCommand(
         DriveCommands.joystickDrive(
             drive,
-            () -> -controller.getLeftY() / (opcon.rightTrigger().getAsBoolean() ? 2 : 1),
-            () -> -controller.getLeftX() / (opcon.rightTrigger().getAsBoolean() ? 2 : 1),
-            () -> -controller.getRightX() / (opcon.rightTrigger().getAsBoolean() ? 2 : 1)));
+            () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+            () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+            () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1)));
 
     // Lock to 0° when A button is held
     //    controller
@@ -211,7 +212,7 @@ public class RobotContainer {
     // Switch to X pattern when X button is pressed
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
-    // Reset gyro to 0° when B button is pressed
+    // Reset pose rotation when B button is pressed
     controller
         .b()
         .onTrue(
@@ -222,62 +223,39 @@ public class RobotContainer {
                     drive)
                 .ignoringDisable(true));
 
-    opcon.a().whileTrue(Commands.run(() -> shooter.quickWheelCommand(7.5), shooter));
-    // opcon.b().whileTrue(Commands.run(() -> shooter.quickWheelCommand(7.5), shooter));
-    opcon.x().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
-    opcon.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
-
-    opcon.leftBumper().whileTrue(Commands.run(() -> rollers.jset(6), rollers));
-    opcon.rightBumper().whileTrue(Commands.run(() -> rollers.jset(-6), rollers));
-    opcon
-        .leftStick()
-        .whileTrue(
-            Commands.run(
-                () -> {
-                  shooter.quickWheelCommand(0);
-                  rollers.jset(0.0);
-                },
-                rollers,
-                shooter));
-
-    // controller.b().whileTrue(Commands.run(() -> shooter.quickWheelCommand(-5), shooter));
-    controller.x().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
+    // Hood positions
+    controller.a().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
     controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
 
+    // Press right trigger to run shooter startup
     controller
-        .rightStick()
-        .onTrue(
+        .rightTrigger(0.7)
+        .whileTrue(
             Commands.run(() -> shooter.quickWheelCommand(12), shooter)
                 .alongWith(
-                    Commands.waitSeconds(1.5)
-                        .andThen(Commands.run(() -> rollers.setSpeeds(0, 10), rollers))));
+                    Commands.waitSeconds(1.0)
+                        .andThen(Commands.run(() -> rollers.setSpeeds(0, 10), rollers)))
+                .alongWith(Commands.run(() -> controller.setRumble(RumbleType.kBothRumble, 0.5))));
 
+    // Release right trigger to stop shooter
     controller
-        .rightTrigger(0.9)
-        .and(controller.leftTrigger(0.9))
-        .onTrue(
-            Commands.runOnce(
-                () ->
-                    drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d()))));
-
-    // controller.leftBumper().whileTrue(Commands.run(() -> rollers.jset(4), rollers));
-    // controller.rightBumper().whileTrue(Commands.run(() -> rollers.jset(-4), rollers));
-    controller
-        .leftStick()
-        .whileTrue(
+        .rightTrigger(0.7)
+        .whileFalse(
             Commands.run(
-                () -> {
-                  shooter.quickWheelCommand(0);
-                  rollers.jset(0.0);
-                },
-                rollers,
-                shooter));
+                    () -> {
+                      shooter.quickWheelCommand(0);
+                      rollers.setSpeeds(0, 0);
+                    },
+                    rollers,
+                    shooter)
+                .alongWith(Commands.run(() -> controller.setRumble(RumbleType.kBothRumble, 0))));
 
     // Intake/hopper control
     // controller.rightBumper().whileTrue(intake.extendHopper());
     // controller.leftBumper().whileTrue(intake.retractHopper());
-    controller.rightBumper().whileTrue(intake.intake());
-    controller.leftBumper().whileTrue(intake.intakeStop());
+    controller.rightBumper().onTrue(intake.intake());
+    controller.leftBumper().onTrue(intake.intakeReverse());
+    controller.leftBumper().or(controller.rightBumper()).onFalse(intake.intakeStop());
   }
 
   /**
