@@ -7,13 +7,13 @@
 
 package frc.robot;
 
-import com.ctre.phoenix6.CANBus;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.util.FileVersionException;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -69,10 +69,11 @@ public class RobotContainer {
         // a CANcoder
         drive =
             new Drive(
+                qwest,
                 new GyroIO() {
                   @Override
                   public void updateInputs(GyroIOInputs inputs) {
-                    inputs.connected = qwest.connected();
+                    inputs.connected = qwest.isConnected();
                     inputs.yawPosition = qwest.gyroLikeYaw();
                   }
                 },
@@ -81,8 +82,8 @@ public class RobotContainer {
                 new ModuleIOTalonFX(TunerConstants.BackLeft),
                 new ModuleIOTalonFX(TunerConstants.BackRight));
         shooter = new Shooter(new ShooterIOKrakens(62, 9));
-        rollers = new Rollers(new RollersIOKraken(new CANBus("1716_canivore"), 0, 35));
-        intake = new Intake(new IntakeIOKraken(new CANBus("1716_canivore"), -1, -1));
+        rollers = new Rollers(new RollersIOKraken(-1, 37));
+        intake = new Intake(new IntakeIOKraken(40, -1));
 
         // The ModuleIOTalonFXS implementation provides an example implementation for
         // TalonFXS controller connected to a CANdi with a PWM encoder. The
@@ -102,11 +103,11 @@ public class RobotContainer {
         // new ModuleIOTalonFXS(TunerConstants.BackLeft),
         // new ModuleIOTalonFXS(TunerConstants.BackRight));
         break;
-
       case SIM:
         // Sim robot, instantiate physics sim IO implementations
         drive =
             new Drive(
+                qwest,
                 new GyroIO() {},
                 new ModuleIOSim(TunerConstants.FrontLeft),
                 new ModuleIOSim(TunerConstants.FrontRight),
@@ -118,6 +119,7 @@ public class RobotContainer {
         // Replayed robot, disable IO implementations
         drive =
             new Drive(
+                qwest,
                 new GyroIO() {},
                 new ModuleIO() {},
                 new ModuleIO() {},
@@ -189,12 +191,13 @@ public class RobotContainer {
    */
   private void configureButtonBindings() {
     // Default command, normal field-relative drive
+    // with 4x slowmode on op's right trigger
     drive.setDefaultCommand(
         DriveCommands.joystickDrive(
             drive,
-            () -> -controller.getLeftY(),
-            () -> -controller.getLeftX(),
-            () -> -controller.getRightX()));
+            () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+            () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+            () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1)));
 
     // Lock to 0° when A button is held
     //    controller
@@ -209,7 +212,7 @@ public class RobotContainer {
     // Switch to X pattern when X button is pressed
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
-    // Reset gyro to 0° when B button is pressed
+    // Reset pose rotation when B button is pressed
     controller
         .b()
         .onTrue(
@@ -220,47 +223,39 @@ public class RobotContainer {
                     drive)
                 .ignoringDisable(true));
 
-    opcon.a().whileTrue(Commands.run(() -> shooter.quickWheelCommand(7.5), shooter));
-    // opcon.b().whileTrue(Commands.run(() -> shooter.quickWheelCommand(7.5), shooter));
-    opcon.x().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
-    opcon.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
-
-    opcon.leftBumper().whileTrue(Commands.run(() -> rollers.jset(4), rollers));
-    opcon.rightBumper().whileTrue(Commands.run(() -> rollers.jset(-4), rollers));
-    opcon
-        .leftStick()
-        .whileTrue(
-            Commands.run(
-                () -> {
-                  shooter.quickWheelCommand(0);
-                  rollers.jset(0.0);
-                },
-                rollers,
-                shooter));
-
-    controller.a().whileTrue(Commands.run(() -> shooter.quickWheelCommand(5), shooter));
-    // controller.b().whileTrue(Commands.run(() -> shooter.quickWheelCommand(-5), shooter));
-    controller.x().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
+    // Hood positions
+    controller.a().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
     controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
 
-    // controller.leftBumper().whileTrue(Commands.run(() -> rollers.jset(4), rollers));
-    // controller.rightBumper().whileTrue(Commands.run(() -> rollers.jset(-4), rollers));
+    // Press right trigger to run shooter startup
     controller
-        .leftStick()
+        .rightTrigger(0.7)
         .whileTrue(
+            Commands.run(() -> shooter.quickWheelCommand(12), shooter)
+                .alongWith(
+                    Commands.waitSeconds(1.0)
+                        .andThen(Commands.run(() -> rollers.setSpeeds(0, 10), rollers)))
+                .alongWith(Commands.run(() -> controller.setRumble(RumbleType.kBothRumble, 0.5))));
+
+    // Release right trigger to stop shooter
+    controller
+        .rightTrigger(0.7)
+        .whileFalse(
             Commands.run(
-                () -> {
-                  shooter.quickWheelCommand(0);
-                  rollers.jset(0.0);
-                },
-                rollers,
-                shooter));
+                    () -> {
+                      shooter.quickWheelCommand(0);
+                      rollers.setSpeeds(0, 0);
+                    },
+                    rollers,
+                    shooter)
+                .alongWith(Commands.run(() -> controller.setRumble(RumbleType.kBothRumble, 0))));
 
     // Intake/hopper control
-    controller.rightBumper().whileTrue(intake.extendHopper());
-    controller.leftBumper().whileTrue(intake.retractHopper());
-    controller.rightBumper().whileTrue(intake.intake());
-    controller.leftBumper().whileTrue(intake.intakeReverse());
+    // controller.rightBumper().whileTrue(intake.extendHopper());
+    // controller.leftBumper().whileTrue(intake.retractHopper());
+    controller.rightBumper().onTrue(intake.intake());
+    controller.leftBumper().onTrue(intake.intakeReverse());
+    controller.leftBumper().or(controller.rightBumper()).onFalse(intake.intakeStop());
   }
 
   /**

@@ -1,7 +1,6 @@
 package frc.robot.subsystems.shooter;
 
 import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.ClosedLoopGeneralConfigs;
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
@@ -14,6 +13,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.Servo;
+import frc.robot.OurConstants;
 
 public class ShooterIOKrakens implements ShooterIO {
 
@@ -25,7 +25,7 @@ public class ShooterIOKrakens implements ShooterIO {
   StatusSignal<Voltage> shooterAppliedOutputs;
 
   public ShooterIOKrakens(int motorID, int servoID) {
-    shooterMotor = new TalonFX(motorID, new CANBus("1716_canivore"));
+    shooterMotor = new TalonFX(motorID, OurConstants.CAN_BUS);
     hoodServo = new Servo(servoID);
 
     var configurator = shooterMotor.getConfigurator();
