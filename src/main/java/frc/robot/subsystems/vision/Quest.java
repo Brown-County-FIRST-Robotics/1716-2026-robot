@@ -21,7 +21,7 @@ public class Quest extends PeriodicRunnable {
     this.io = io;
   }
 
-  public boolean connected() {
+  public boolean isConnected() {
     return inputs.connected;
   }
 

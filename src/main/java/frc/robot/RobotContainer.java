@@ -23,6 +23,8 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
+import frc.robot.subsystems.drive.ModuleIO;
+import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.IntakeIOKraken;
@@ -71,7 +73,7 @@ public class RobotContainer {
                 new GyroIO() {
                   @Override
                   public void updateInputs(GyroIOInputs inputs) {
-                    inputs.connected = qwest.connected();
+                    inputs.connected = qwest.isConnected();
                     inputs.yawPosition = qwest.gyroLikeYaw();
                   }
                 },
@@ -101,31 +103,28 @@ public class RobotContainer {
         // new ModuleIOTalonFXS(TunerConstants.BackLeft),
         // new ModuleIOTalonFXS(TunerConstants.BackRight));
         break;
-        /*
-        case SIM:
-          // Sim robot, instantiate physics sim IO implementations
-          drive =
-              new Drive(
-                  new GyroIO() {},
-                  new ModuleIOSim(TunerConstants.FrontLeft),
-                  new ModuleIOSim(TunerConstants.FrontRight),
-                  new ModuleIOSim(TunerConstants.BackLeft),
-                  new ModuleIOSim(TunerConstants.BackRight));
-          break;
+      case SIM:
+        // Sim robot, instantiate physics sim IO implementations
+        drive =
+            new Drive(
+                qwest,
+                new GyroIO() {},
+                new ModuleIOSim(TunerConstants.FrontLeft),
+                new ModuleIOSim(TunerConstants.FrontRight),
+                new ModuleIOSim(TunerConstants.BackLeft),
+                new ModuleIOSim(TunerConstants.BackRight));
+        break;
 
-        default:
-          // Replayed robot, disable IO implementations
-          drive =
-              new Drive(
-                  new GyroIO() {},
-                  new ModuleIO() {},
-                  new ModuleIO() {},
-                  new ModuleIO() {},
-                  new ModuleIO() {});
-          break;*/
       default:
-        // TODO: Make quest-based things work in simulation/replay
-        drive = null;
+        // Replayed robot, disable IO implementations
+        drive =
+            new Drive(
+                qwest,
+                new GyroIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {});
         break;
     }
 
@@ -251,7 +250,8 @@ public class RobotContainer {
         .onTrue(
             Commands.run(() -> shooter.quickWheelCommand(12), shooter)
                 .alongWith(
-                    Commands.waitSeconds(1.5).andThen(Commands.run(() -> rollers.setSpeeds(0, 10), rollers))));
+                    Commands.waitSeconds(1.5)
+                        .andThen(Commands.run(() -> rollers.setSpeeds(0, 10), rollers))));
 
     controller
         .rightTrigger(0.9)

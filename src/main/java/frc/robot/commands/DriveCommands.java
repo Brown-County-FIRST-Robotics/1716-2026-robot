@@ -88,12 +88,12 @@ public class DriveCommands {
                   && DriverStation.getAlliance().get() == Alliance.Red;
           drive.runVelocity(
               speeds
-              // TODO: Field oriented code
+              // TODO: Working field oriented
               // ChassisSpeeds.fromFieldRelativeSpeeds(
               //     speeds,
               //     isFlipped
-              //         ? drive.quest.getPose().getRotation().plus(new Rotation2d(Math.PI))
-              //         : drive.quest.getPose().getRotation())
+              //         ? drive.getPose().getRotation().plus(new Rotation2d(Math.PI))
+              //         : drive.getPose().getRotation())
               );
         },
         drive);
