@@ -91,8 +91,7 @@ public class DriveCommands {
                   speeds,
                   isFlipped
                       ? drive.getPose().getRotation().plus(new Rotation2d(Math.PI))
-                      : drive.getPose().getRotation())
-              );
+                      : drive.getPose().getRotation()));
         },
         drive);
   }
@@ -143,8 +142,7 @@ public class DriveCommands {
                       speeds,
                       isFlipped
                           ? drive.getRotation().plus(new Rotation2d(Math.PI))
-                          : drive.getRotation())
-                  );
+                          : drive.getRotation()));
             },
             drive)
 
