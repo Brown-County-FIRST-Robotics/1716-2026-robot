@@ -33,7 +33,7 @@ public class ShooterIOKrakens implements ShooterIO {
     configurator.apply(new ClosedLoopGeneralConfigs());
     configurator.apply(
         new ClosedLoopRampsConfigs()
-            .withDutyCycleClosedLoopRampPeriod(1.0)
+            .withDutyCycleClosedLoopRampPeriod(0.25)
             .withTorqueClosedLoopRampPeriod(1.0));
     configurator.apply(
         new OpenLoopRampsConfigs()
