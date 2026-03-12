@@ -15,6 +15,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -61,6 +62,8 @@ public class RobotContainer {
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
+    SmartDashboard.putNumber("Hood Servo", 2);
+
     qwest = new Quest(new QuestIOQuest(new QuestNav()));
     switch (Constants.currentMode) {
       case REAL:
@@ -224,18 +227,29 @@ public class RobotContainer {
                 .ignoringDisable(true));
 
     // Hood positions
-    controller.a().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
+    controller
+        .a()
+        .whileTrue(
+            Commands.run(
+                () -> shooter.quickServoCommand(SmartDashboard.getNumber("Hood Servo", 2)),
+                shooter));
     controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
 
     // Press right trigger to run shooter startup
     controller
         .rightTrigger(0.7)
         .whileTrue(
-            Commands.run(() -> shooter.quickWheelCommand(12), shooter)
+            Commands.run(() -> shooter.setShooterSpeed(105), shooter)
                 .alongWith(
                     Commands.waitSeconds(1.0)
-                        .andThen(Commands.run(() -> rollers.setSpeeds(0, 10), rollers)))
-                .alongWith(Commands.run(() -> controller.setRumble(RumbleType.kBothRumble, 0.5))));
+                        .andThen(Commands.run(() -> rollers.setSpeeds(0, 25), rollers)))
+                .alongWith(
+                    Commands.race(
+                            Commands.run(() -> controller.setRumble(RumbleType.kBothRumble, 0.5)),
+                            Commands.waitSeconds(1.25))
+                        .andThen(
+                            Commands.run(
+                                () -> controller.setRumble(RumbleType.kLeftRumble, 0.0)))));
 
     // Release right trigger to stop shooter
     controller
