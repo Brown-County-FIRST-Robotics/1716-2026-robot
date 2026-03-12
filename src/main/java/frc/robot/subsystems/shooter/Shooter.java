@@ -89,6 +89,10 @@ public class Shooter implements Subsystem {
     io.quickShooter(volts);
   }
 
+  public void setShooterSpeed(double speed) {
+    io.commandShooterSpeed(speed);
+  }
+
   public void quickServoCommand(double increment) {
     io.commandHoodPosition(increment);
   }
