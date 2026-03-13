@@ -15,7 +15,7 @@ public class Shooter implements Subsystem {
   private static final double hoodLegLength2 = 8.20;
   private static final double hoodZero = Math.asin(1.75 / 9);
   ShooterIOInputsAutoLogged inputs = new ShooterIOInputsAutoLogged();
-  ShooterIO io;
+  ShooterIO shooterIo;
   TurretIO turretIO;
   TurretIOInputsAutoLogged turretInputs = new TurretIOInputsAutoLogged();
   Rotation2d turret_rotation = new Rotation2d();
@@ -26,7 +26,7 @@ public class Shooter implements Subsystem {
 
   @Override
   public void periodic() {
-    io.updateInputs(inputs);
+    shooterIo.updateInputs(inputs);
     turretIO.updateInputs(turretInputs);
     Logger.processInputs("turret", turretInputs);
     Logger.processInputs("shooter", inputs);
@@ -86,14 +86,18 @@ public class Shooter implements Subsystem {
   }
 
   public void quickWheelCommand(double volts) {
-    io.quickShooter(volts);
+    shooterIo.quickShooter(volts);
+  }
+
+  public void setShooterSpeed(double speed) {
+    shooterIo.commandShooterSpeed(speed);
   }
 
   public void quickServoCommand(double increment) {
-    io.commandHoodPosition(increment);
+    shooterIo.commandHoodPosition(increment);
   }
 
   public Shooter(ShooterIO io) {
-    this.io = io;
+    this.shooterIo = io;
   }
 }
