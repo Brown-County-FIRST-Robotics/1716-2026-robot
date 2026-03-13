@@ -30,7 +30,7 @@ public class Shooter implements Subsystem {
     turretIO.updateInputs(turretInputs);
     Logger.processInputs("turret", turretInputs);
     Logger.processInputs("shooter", inputs);
-    hoodAngle = fuseEncoders(turretInputs.encoder_a_position, turretInputs.encoder_b_position);
+    turret_rotation = fuseEncoders(turretInputs.encoder_a_position, turretInputs.encoder_b_position);
   }
 
   public Command fireCommand() {
