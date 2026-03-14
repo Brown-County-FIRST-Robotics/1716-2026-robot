@@ -15,7 +15,6 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -225,40 +224,29 @@ public class RobotContainer {
                 .ignoringDisable(true));
 
     // Hood positions
-    controller
-        .a()
-        .whileTrue(
-            Commands.run(
-                () -> shooter.quickServoCommand(1),
-                shooter));
+    controller.a().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
     controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
 
     // Press right trigger to run shooter startup
     controller
         .rightTrigger(0.7)
-        .whileTrue(
+        .onTrue(
             Commands.run(
-                    () -> shooter.setShooterSpeed(80),
-                    shooter)
-                .alongWith(
-                    Commands.waitSeconds(1.0)
-                        .andThen(
-                            Commands.run(
-                                () ->
-                                    rollers.setSpeeds(0, 20),
-                                rollers)))
-                .alongWith(
-                    Commands.race(
-                            Commands.run(() -> controller.setRumble(RumbleType.kBothRumble, 0.5)),
-                            Commands.waitSeconds(1.25))
-                        .andThen(
-                            Commands.run(
-                                () -> controller.setRumble(RumbleType.kLeftRumble, 0.0)))));
+                () -> {
+                  shooter.setShooterSpeed(80);
+                  rollers.setSpeeds(0, 20);
+                  Commands.race(
+                      Commands.run(() -> controller.setRumble(RumbleType.kRightRumble, 0.5)),
+                      Commands.waitSeconds(0.3));
+                  Commands.run(() -> controller.setRumble(RumbleType.kBothRumble, 0.5));
+                },
+                shooter,
+                rollers));
 
     // Release right trigger to stop shooter
     controller
         .rightTrigger(0.7)
-        .whileFalse(
+        .onFalse(
             Commands.run(
                     () -> {
                       shooter.quickWheelCommand(0);
