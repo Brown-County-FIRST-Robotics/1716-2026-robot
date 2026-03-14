@@ -40,7 +40,7 @@ public class RollersIOKraken implements RollersIO {
             .withDutyCycleClosedLoopRampPeriod(0.5)
             .withTorqueClosedLoopRampPeriod(0.5));
     kicker_cfgr.apply(
-        new Slot0Configs().withKV(12.0 / (7758.0 / 60.0)).withKP(1.2 * 12.0 / (7758.0 / 60.0)));
+        new Slot0Configs().withKP(12.0 / 120.0).withKI(0).withKD(0).withKV(12.0 / 120.0).withKA(0));
     // var roller_cfgr = rollerMotor.getConfigurator();
     // roller_cfgr.apply(
     //  new ClosedLoopRampsConfigs()
