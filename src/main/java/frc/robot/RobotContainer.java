@@ -257,6 +257,7 @@ public class RobotContainer {
     controller.rightBumper().onTrue(intake.intake());
     controller.leftBumper().onTrue(intake.intakeReverse());
     controller.leftBumper().or(controller.rightBumper()).onFalse(intake.intakeStop());
+    shooter.register();
   }
 
   /**

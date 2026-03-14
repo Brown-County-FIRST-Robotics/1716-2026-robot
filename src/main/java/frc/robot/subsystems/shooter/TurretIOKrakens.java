@@ -1,5 +1,6 @@
 package frc.robot.subsystems.shooter;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -27,6 +28,7 @@ public class TurretIOKrakens implements TurretIO {
 
   @Override
   public void updateInputs(TurretIOInputs inputs) {
+    BaseStatusSignal.refreshAll(a_angle, b_angle);
     inputs.encoder_a_position = a_angle.getValue().in(Units.Rotations);
     inputs.encoder_b_position = b_angle.getValue().in(Units.Rotations);
   }
