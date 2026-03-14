@@ -93,7 +93,8 @@ public class Shooter implements Subsystem {
     io.commandHoodPosition(increment);
   }
 
-  public Shooter(ShooterIO io) {
+  public Shooter(ShooterIO io, TurretIO tio) {
     this.io = io;
+    this.turretIO = tio;
   }
 }

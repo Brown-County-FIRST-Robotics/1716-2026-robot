@@ -32,6 +32,7 @@ import frc.robot.subsystems.rollers.Rollers;
 import frc.robot.subsystems.rollers.RollersIOKraken;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterIOKrakens;
+import frc.robot.subsystems.shooter.TurretIOKrakens;
 import frc.robot.subsystems.vision.Quest;
 import frc.robot.subsystems.vision.QuestIOQuest;
 import gg.questnav.questnav.QuestNav;
@@ -81,7 +82,7 @@ public class RobotContainer {
                 new ModuleIOTalonFX(TunerConstants.FrontRight),
                 new ModuleIOTalonFX(TunerConstants.BackLeft),
                 new ModuleIOTalonFX(TunerConstants.BackRight));
-        shooter = new Shooter(new ShooterIOKrakens(62, 9));
+        shooter = new Shooter(new ShooterIOKrakens(62, 9), new TurretIOKrakens(36, 35, 22));
         rollers = new Rollers(new RollersIOKraken(-1, 37));
         intake = new Intake(new IntakeIOKraken(40, -1));
 
