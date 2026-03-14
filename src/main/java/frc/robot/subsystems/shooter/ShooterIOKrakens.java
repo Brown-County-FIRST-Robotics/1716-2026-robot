@@ -31,16 +31,13 @@ public class ShooterIOKrakens implements ShooterIO {
     var configurator = shooterMotor.getConfigurator();
     configurator.apply(
         new Slot0Configs()
-            .withKP(2.0 * 12.0 / 120.0)
-            .withKV(12.0 / 120.0)
+            .withKP(12 * 12.0 / 120.0)
             .withKI(0)
             .withKD(0)
+            .withKV(12.0 / 120.0)
             .withKA(0));
     configurator.apply(new ClosedLoopGeneralConfigs());
-    configurator.apply(
-        new ClosedLoopRampsConfigs()
-            .withDutyCycleClosedLoopRampPeriod(0.25)
-            .withTorqueClosedLoopRampPeriod(1.0));
+    configurator.apply(new ClosedLoopRampsConfigs().withDutyCycleClosedLoopRampPeriod(0.0));
     configurator.apply(
         new OpenLoopRampsConfigs()
             .withDutyCycleOpenLoopRampPeriod(1.0)
