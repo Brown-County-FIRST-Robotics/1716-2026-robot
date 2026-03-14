@@ -12,6 +12,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import frc.robot.OurConstants;
+import org.littletonrobotics.junction.Logger;
 
 public class RollersIOKraken implements RollersIO {
   TalonFX rollerMotor;
@@ -39,8 +40,15 @@ public class RollersIOKraken implements RollersIO {
         new ClosedLoopRampsConfigs()
             .withDutyCycleClosedLoopRampPeriod(0.5)
             .withTorqueClosedLoopRampPeriod(0.5));
+    // Using KS because of our friction-based belt tensioning system
     kicker_cfgr.apply(
-        new Slot0Configs().withKV(12.0 / (7758.0 / 60.0)).withKP(1.2 * 12.0 / (7758.0 / 60.0)));
+        new Slot0Configs()
+            .withKP(12.0 / 120.0)
+            .withKI(0)
+            .withKD(0)
+            .withKV(12.0 / 120.0)
+            .withKA(0)
+            .withKS(0.5));
     // var roller_cfgr = rollerMotor.getConfigurator();
     // roller_cfgr.apply(
     //  new ClosedLoopRampsConfigs()
@@ -73,6 +81,7 @@ public class RollersIOKraken implements RollersIO {
 
   @Override
   public void commandSpeed(double rollerVelocity, double kicker_velocity) {
+    Logger.recordOutput("rollers/kickerSetSpeed", kicker_velocity);
     kickerMotor.setControl(new VelocityVoltage(kicker_velocity));
     //  rollerMotor.setControl(new VelocityVoltage(rollerVelocity));
   }
