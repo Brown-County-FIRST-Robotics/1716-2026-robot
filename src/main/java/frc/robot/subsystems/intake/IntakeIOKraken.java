@@ -8,6 +8,8 @@ import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
+
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
@@ -26,7 +28,7 @@ public class IntakeIOKraken implements IntakeIO {
 
   public IntakeIOKraken(int intakeID, int extendID) {
     intakeMotor = new TalonFX(intakeID, OurConstants.CAN_BUS);
-    // extendMotor = new TalonFX(extendID, OurConstants.CAN_BUS);
+    extendMotor = new TalonFX(extendID, OurConstants.CAN_BUS);
     intakeVelocity = intakeMotor.getVelocity();
     intakeCurrent = intakeMotor.getStatorCurrent();
     intakeCurrent.setUpdateFrequency(50);
@@ -35,13 +37,14 @@ public class IntakeIOKraken implements IntakeIO {
     // extendCurrent = extendMotor.getStatorCurrent();
     // extendCurrent.setUpdateFrequency(50);
     // extendAppliedVolts = extendMotor.getMotorVoltage();
-    // var extend_cfgr = extendMotor.getConfigurator();
+    var extend_cfgr = extendMotor.getConfigurator();
     // extend_cfgr.apply(
     //     new ClosedLoopRampsConfigs()
     //         .withDutyCycleClosedLoopRampPeriod(0.5)
     //         .withTorqueClosedLoopRampPeriod(0.5));
-    // extend_cfgr.apply(
-    //     new Slot0Configs().withKV(12.0 / (7758.0 / 60.0)).withKP(1.2 * 12.0 / (7758.0 / 60.0)));
+    extend_cfgr.apply(
+        new Slot0Configs().withKV(0.12).withKP(3).withKS(1));
+    extend_cfgr.apply(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake));
     var intake_cfgr = intakeMotor.getConfigurator();
     intake_cfgr.apply(
         new ClosedLoopRampsConfigs()
