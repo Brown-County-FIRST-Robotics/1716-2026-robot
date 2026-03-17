@@ -3,8 +3,6 @@ package frc.robot.subsystems.rollers;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.OurConstants;
 import org.littletonrobotics.junction.Logger;
@@ -35,18 +33,6 @@ public class Rollers extends SubsystemBase {
 
   public void setSpeeds(double rollerVelocity, double kicker_velocity) {
     io.commandSpeed(rollerVelocity, kicker_velocity);
-  }
-
-  public void jset(double volts) {
-    io.justSet(volts);
-  }
-
-  public Command spinRollers() {
-    return Commands.run(() -> setSpeeds(20, 20), this);
-  }
-
-  public Command reverseRollers() {
-    return Commands.run(() -> setSpeeds(-20, -20), this);
   }
 
   @Override
