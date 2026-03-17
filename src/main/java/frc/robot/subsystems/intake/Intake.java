@@ -18,6 +18,8 @@ public class Intake extends SubsystemBase {
       new Debouncer(OurConstants.CONNECTED_DEBOUNCE_TIME, Debouncer.DebounceType.kFalling);
   private final Alert intakeDisconnectedAlert;
   private final Alert extendDisconnectedAlert;
+  double extendedZeroPosition;
+
 
   public Intake(IntakeIO io) {
     this.io = io;
@@ -38,6 +40,14 @@ public class Intake extends SubsystemBase {
             Alert.AlertType.kError);
   }
 
+  public double getRealExtenderPosition(){
+    return inputs.extendPosition-extendedZeroPosition;
+  }
+
+  public void setZeroPosition(){
+    extendedZeroPosition = inputs.extendPosition;
+  }
+
   public void setSpeeds(double intake_velocity, double extend_velocity) {
     io.intakeSpeed(intake_velocity);
     io.extendSpeed(extend_velocity);
@@ -55,12 +65,9 @@ public class Intake extends SubsystemBase {
     return Commands.run(() -> io.intakeSpeed(-100), this);
   }
 
-  public Command extendHopper() {
-    return Commands.run(() -> io.extendSpeed(20), this);
-  }
 
   public Command retractHopper() {
-    return Commands.run(() -> io.extendSpeed(-20), this);
+    return Commands.run(() -> io.extenderPosition(extendedZeroPosition), this);
   }
 
   @Override
