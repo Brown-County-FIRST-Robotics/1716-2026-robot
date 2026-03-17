@@ -30,7 +30,8 @@ public class Shooter implements Subsystem {
     turretIO.updateInputs(turretInputs);
     Logger.processInputs("turret", turretInputs);
     Logger.processInputs("shooter", inputs);
-    turret_rotation = fuseEncoders(turretInputs.encoder_a_position, turretInputs.encoder_b_position);
+    turret_rotation =
+        fuseEncoders(turretInputs.encoder_a_position, turretInputs.encoder_b_position);
   }
 
   public Command fireCommand() {
@@ -64,15 +65,19 @@ public class Shooter implements Subsystem {
   }
 
   private Rotation2d fuseEncoders(double aPosition, double bPosition) {
-    //A and B are read from encoder, should be somewhere from 0-1
-    //A might need to be from smaller tooth gear
-    double aNumOfTeeth = aPosition * 11;//turn encoder position to the amount of teeth the gear has rotated
+    // A and B are read from encoder, should be somewhere from 0-1
+    // A might need to be from smaller tooth gear
+    double aNumOfTeeth =
+        aPosition * 11; // turn encoder position to the amount of teeth the gear has rotated
     double bNumOfTeeth = bPosition * 13;
     long garbageDifference = (Math.round(aNumOfTeeth - bNumOfTeeth) % 11);
-    long bGearRotations = (garbageDifference + 11 * (garbageDifference % 2))/2;//Amount of times the 13 tooth gear has made a full rotation
-    double numOf100Teeth = bGearRotations * 13 + bNumOfTeeth;//How many teeth the 100 gear has rotated
-   
-    double rotationInRadians = numOf100Teeth / 100 * (2* Math.PI);//convert to radians
+    long bGearRotations =
+        (garbageDifference + 11 * (garbageDifference % 2))
+            / 2; // Amount of times the 13 tooth gear has made a full rotation
+    double numOf100Teeth =
+        bGearRotations * 13 + bNumOfTeeth; // How many teeth the 100 gear has rotated
+
+    double rotationInRadians = numOf100Teeth / 100 * (2 * Math.PI); // convert to radians
     return Rotation2d.fromRadians(rotationInRadians);
   }
 
