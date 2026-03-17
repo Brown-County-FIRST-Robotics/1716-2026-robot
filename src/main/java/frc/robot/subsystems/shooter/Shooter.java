@@ -79,7 +79,7 @@ public class Shooter extends SubsystemBase {
     double numOf100Teeth =
         bGearRotations * 13 + bNumOfTeeth; // How many teeth the 100 gear has rotated
     double rotationInRadians = numOf100Teeth / 100 * (2 * Math.PI); // convert to radians
-    return Rotation2d.fromRadians(rotationInRadians);
+    return Rotation2d.fromRadians(rotationInRadians + (Math.PI / 2) - 1.87);
   }
 
   // both of the next functions together are just the law of cosines, bc it is a literal triangle
