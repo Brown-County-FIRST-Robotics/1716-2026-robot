@@ -9,7 +9,6 @@ import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
@@ -42,8 +41,7 @@ public class IntakeIOKraken implements IntakeIO {
     //     new ClosedLoopRampsConfigs()
     //         .withDutyCycleClosedLoopRampPeriod(0.5)
     //         .withTorqueClosedLoopRampPeriod(0.5));
-    extend_cfgr.apply(
-        new Slot0Configs().withKV(0.12).withKP(3).withKS(1));
+    extend_cfgr.apply(new Slot0Configs().withKV(0.12).withKP(3).withKS(1));
     extend_cfgr.apply(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake));
     var intake_cfgr = intakeMotor.getConfigurator();
     intake_cfgr.apply(
