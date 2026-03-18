@@ -13,6 +13,8 @@ public interface IntakeIO {
     public boolean extendConnected = false;
     public double extendAppliedVolts = 0.0;
     public double extendAppliedCurrent = 0.0;
+    public double extendPosition = 0.0;
+
   }
 
   default void updateInputs(IntakeIOInputs inputs) {}
@@ -20,4 +22,6 @@ public interface IntakeIO {
   default void intakeSpeed(double intake_speed) {}
 
   default void extendSpeed(double extend_speed) {}
+
+  default void extenderPosition(double position){}
 }
