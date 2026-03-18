@@ -20,7 +20,6 @@ public class Intake extends SubsystemBase {
   private final Alert extendDisconnectedAlert;
   double extendedZeroPosition;
 
-
   public Intake(IntakeIO io) {
     this.io = io;
     intakeDisconnectedAlert =
@@ -40,11 +39,11 @@ public class Intake extends SubsystemBase {
             Alert.AlertType.kError);
   }
 
-  public double getRealExtenderPosition(){
-    return inputs.extendPosition-extendedZeroPosition;
+  public double getRealExtenderPosition() {
+    return inputs.extendPosition - extendedZeroPosition;
   }
 
-  public void setZeroPosition(){
+  public void setZeroPosition() {
     extendedZeroPosition = inputs.extendPosition;
   }
 
@@ -64,7 +63,6 @@ public class Intake extends SubsystemBase {
   public Command intakeReverse() {
     return Commands.run(() -> io.intakeSpeed(-100), this);
   }
-
 
   public Command retractHopper() {
     return Commands.run(() -> io.extenderPosition(extendedZeroPosition), this);
