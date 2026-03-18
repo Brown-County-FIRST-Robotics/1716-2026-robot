@@ -234,7 +234,7 @@ public class RobotContainer {
             Commands.run(() -> shooter.setShooterSpeed(80), shooter)
                 .alongWith(
                     Commands.waitSeconds(0.3)
-                        .andThen(Commands.run(() -> rollers.setSpeeds(0, 20), rollers)))
+                        .andThen(Commands.run(() -> rollers.setSpeeds(2, 20), rollers)))
                 .alongWith(
                     Commands.race(
                             Commands.run(() -> controller.setRumble(RumbleType.kRightRumble, 0.5)),
