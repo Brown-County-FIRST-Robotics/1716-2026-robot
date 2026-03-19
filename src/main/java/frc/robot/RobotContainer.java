@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
@@ -228,6 +229,7 @@ public class RobotContainer {
     controller.a().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
     controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
 
+    new Trigger(intake::isExtenderConnected).onTrue(Commands.runOnce(intake::setZeroPosition));
     // Press right trigger to run shooter startup
     controller
         .rightTrigger(0.7)
@@ -251,7 +253,7 @@ public class RobotContainer {
 
     // Intake/hopper control
     // controller.rightBumper().whileTrue(intake.extendHopper());
-    // controller.leftBumper().whileTrue(intake.retractHopper());
+    opcon.leftBumper().whileTrue(intake.retractHopper());
     controller.rightBumper().onTrue(intake.intake());
     controller.leftBumper().onTrue(intake.intakeReverse());
     controller.leftBumper().or(controller.rightBumper()).onFalse(intake.intakeStop());
