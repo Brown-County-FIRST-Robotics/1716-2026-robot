@@ -28,7 +28,7 @@ public class RollersIOKraken implements RollersIO {
     rollerVelocity = rollerMotor.getVelocity();
     rollerCurrent = rollerMotor.getStatorCurrent();
     rollerCurrent.setUpdateFrequency(50);
-     rollerAppliedVolts = rollerMotor.getMotorVoltage();
+    rollerAppliedVolts = rollerMotor.getMotorVoltage();
     kickerVelocity = kickerMotor.getVelocity();
     kickerCurrent = kickerMotor.getStatorCurrent();
     kickerCurrent.setUpdateFrequency(50);

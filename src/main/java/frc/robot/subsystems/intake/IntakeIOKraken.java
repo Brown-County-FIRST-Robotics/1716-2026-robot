@@ -27,7 +27,7 @@ public class IntakeIOKraken implements IntakeIO {
   StatusSignal<Voltage> extendAppliedVolts;
 
   public IntakeIOKraken(int intakeID, int extendID) {
-    intakeMotor = new TalonFX(intakeID, OurConstants.CAN_BUS);
+    intakeMotor = new TalonFX(intakeID, OurConstants.INTAKE_CAN_BUS);
     extendMotor = new TalonFX(extendID, OurConstants.CAN_BUS);
     intakeVelocity = intakeMotor.getVelocity();
     intakeCurrent = intakeMotor.getStatorCurrent();
