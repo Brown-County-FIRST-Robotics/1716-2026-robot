@@ -68,7 +68,7 @@ public class Intake extends SubsystemBase {
     return Commands.run(() -> io.extenderPosition(extendedZeroPosition), this);
   }
 
-  public boolean isExtenderConnected(){
+  public boolean isExtenderConnected() {
     return inputs.extendConnected;
   }
 
