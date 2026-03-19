@@ -28,7 +28,7 @@ public class RollersIOKraken implements RollersIO {
     rollerVelocity = rollerMotor.getVelocity();
     rollerCurrent = rollerMotor.getStatorCurrent();
     rollerCurrent.setUpdateFrequency(50);
-     rollerAppliedVolts = rollerMotor.getMotorVoltage();
+    rollerAppliedVolts = rollerMotor.getMotorVoltage();
     kickerVelocity = kickerMotor.getVelocity();
     kickerCurrent = kickerMotor.getStatorCurrent();
     kickerCurrent.setUpdateFrequency(50);
@@ -54,7 +54,7 @@ public class RollersIOKraken implements RollersIO {
             .withTorqueClosedLoopRampPeriod(0.5));
     roller_cfgr.apply(
         new Slot0Configs()
-            .withKP(2 * 12.0 / 120.0)
+            .withKP(0.25 * 12.0 / 120.0)
             .withKI(0)
             .withKD(0)
             .withKV(12.0 / 120.0)

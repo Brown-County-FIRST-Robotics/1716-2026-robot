@@ -83,7 +83,7 @@ public class RobotContainer {
                 new ModuleIOTalonFX(TunerConstants.BackLeft),
                 new ModuleIOTalonFX(TunerConstants.BackRight));
         shooter = new Shooter(new ShooterIOKrakens(62, 9), new TurretIOKrakens(36, 35, 22));
-        rollers = new Rollers(new RollersIOKraken(-1, 37));
+        rollers = new Rollers(new RollersIOKraken(38, 37));
         intake = new Intake(new IntakeIOKraken(40, 38));
 
         // The ModuleIOTalonFXS implementation provides an example implementation for
@@ -231,6 +231,8 @@ public class RobotContainer {
 
     new Trigger(intake::isExtenderConnected).onTrue(Commands.runOnce(intake::setZeroPosition));
     // Press right trigger to run shooter startup
+    // Kicker backdrives for default
+    rollers.setDefaultCommand(Commands.run(() -> rollers.setSpeeds(-0.1, 0), rollers));
     controller
         .rightTrigger(0.7)
         .whileTrue(
@@ -247,7 +249,7 @@ public class RobotContainer {
                 .finallyDo(
                     () -> {
                       shooter.quickWheelCommand(0);
-                      rollers.setSpeeds(0, 0);
+                      rollers.setSpeeds(0, 0); // Will be freed back to default cmd
                       controller.setRumble(RumbleType.kBothRumble, 0);
                     }));
 
