@@ -41,6 +41,10 @@ public class IntakeIOKraken implements IntakeIO {
 
     extend_cfgr.apply(new Slot0Configs().withKV(0.12).withKP(3).withKS(1));
     extend_cfgr.apply(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake));
+    extend_cfgr.apply(
+        new ClosedLoopRampsConfigs()
+            .withDutyCycleClosedLoopRampPeriod(5)
+            .withTorqueClosedLoopRampPeriod(3));
     var intake_cfgr = intakeMotor.getConfigurator();
     intake_cfgr.apply(
         new ClosedLoopRampsConfigs()
