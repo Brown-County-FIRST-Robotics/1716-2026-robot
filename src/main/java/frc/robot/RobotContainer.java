@@ -83,7 +83,7 @@ public class RobotContainer {
                 new ModuleIOTalonFX(TunerConstants.BackLeft),
                 new ModuleIOTalonFX(TunerConstants.BackRight));
         shooter = new Shooter(new ShooterIOKrakens(62, 9), new TurretIOKrakens(36, 35, 22));
-        rollers = new Rollers(new RollersIOKraken(38, 37));
+        rollers = new Rollers(new RollersIOKraken(43, 37));
         intake = new Intake(new IntakeIOKraken(40, 38));
 
         // The ModuleIOTalonFXS implementation provides an example implementation for
@@ -237,7 +237,7 @@ public class RobotContainer {
             Commands.run(() -> shooter.setShooterSpeed(80), shooter)
                 .alongWith(
                     Commands.waitSeconds(0.3)
-                        .andThen(Commands.run(() -> rollers.setSpeeds(2, 20), rollers)))
+                        .andThen(Commands.run(() -> rollers.setSpeeds(20, 20), rollers)))
                 .alongWith(
                     Commands.race(
                             Commands.run(() -> controller.setRumble(RumbleType.kRightRumble, 0.5)),
@@ -252,7 +252,7 @@ public class RobotContainer {
                     }));
 
     // Intake/hopper control
-    // controller.rightBumper().whileTrue(intake.extendHopper());
+    controller.rightBumper().whileTrue(intake.extendHopper());
     opcon.leftBumper().whileTrue(intake.retractHopper());
     controller.rightBumper().onTrue(intake.intake());
     controller.leftBumper().onTrue(intake.intakeReverse());

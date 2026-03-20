@@ -61,7 +61,11 @@ public class Intake extends SubsystemBase {
   }
 
   public Command intakeReverse() {
-    return Commands.run(() -> io.intakeSpeed(-100), this);
+    return Commands.run(() -> io.intakeSpeed(-25), this);
+  }
+
+  public Command extendHopper() {
+    return Commands.run(() -> io.extenderPosition(extendedZeroPosition + 14.1), this);
   }
 
   public Command retractHopper() {
