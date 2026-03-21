@@ -3,9 +3,11 @@ package frc.robot.subsystems.rollers;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.InvertedValue;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
@@ -60,6 +62,7 @@ public class RollersIOKraken implements RollersIO {
             .withKV(12.0 / 120.0)
             .withKA(0)
             .withKS(0));
+    roller_cfgr.apply(new MotorOutputConfigs().withInverted(InvertedValue.Clockwise_Positive));
   }
 
   @Override
