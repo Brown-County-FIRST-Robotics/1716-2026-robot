@@ -5,7 +5,11 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
-import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.configs.Slot1Configs;
+import com.ctre.phoenix6.configs.Slot2Configs;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
+import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -39,16 +43,32 @@ public class IntakeIOKraken implements IntakeIO {
     extendAppliedVolts = extendMotor.getMotorVoltage();
     var extend_cfgr = extendMotor.getConfigurator();
 
-    extend_cfgr.apply(new Slot0Configs().withKV(0.12).withKP(3).withKS(1));
+    extend_cfgr.apply(new Slot0Configs().withKP(0.5).withKV(0.12).withKS(1));
+    extend_cfgr.apply(new Slot1Configs().withKP(0.25).withKV(0.06).withKS(1));
+    extend_cfgr.apply(new Slot2Configs().withKP(0.15).withKV(0.3).withKS(1));
     extend_cfgr.apply(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake));
     var intake_cfgr = intakeMotor.getConfigurator();
     intake_cfgr.apply(
         new ClosedLoopRampsConfigs()
-            .withDutyCycleClosedLoopRampPeriod(0.5)
+            .withDutyCycleClosedLoopRampPeriod(5)
             .withTorqueClosedLoopRampPeriod(0.5));
     intake_cfgr.apply(
         new Slot0Configs().withKV(12.0 / (7758.0 / 60.0)).withKP(0.8 * 12.0 / (7758.0 / 60.0)));
     intake_cfgr.apply(new MotorOutputConfigs().withInverted(InvertedValue.Clockwise_Positive));
+
+    // Motion magic control for extension/retraction
+    var r_mmc = new TalonFXConfiguration().MotionMagic;
+    r_mmc.MotionMagicCruiseVelocity = 8;
+    r_mmc.MotionMagicAcceleration = 3;
+    r_mmc.MotionMagicJerk = 30;
+    extend_cfgr.apply(r_mmc);
+
+    // Motion magic control for main motor
+    var mmc = new TalonFXConfiguration().MotionMagic;
+    mmc.MotionMagicCruiseVelocity = 100;
+    mmc.MotionMagicAcceleration = 75;
+    mmc.MotionMagicJerk = 75;
+    intake_cfgr.apply(mmc);
   }
 
   @Override
@@ -69,11 +89,21 @@ public class IntakeIOKraken implements IntakeIO {
 
   @Override
   public void intakeSpeed(double intake_vel) {
-    intakeMotor.setControl(new VelocityVoltage(intake_vel));
+    var request = new MotionMagicVelocityVoltage(intake_vel);
+    intakeMotor.setControl(request.withVelocity(intake_vel));
   }
 
   @Override
   public void extenderPosition(double extendPosition) {
-    extendMotor.setControl(new PositionVoltage(extendPosition));
+    var request = new MotionMagicVoltage(0);
+    extendMotor.setControl(request.withPosition(extendPosition));
+  }
+
+  @Override
+  public void extenderVelocity(double rps) {
+    // Negative rps means retracting
+    if (rps == 0) extendMotor.setControl(new VelocityVoltage(rps).withSlot(2));
+    else if (rps < 0) extendMotor.setControl(new VelocityVoltage(rps).withSlot(0));
+    else extendMotor.setControl(new VelocityVoltage(rps).withSlot(1));
   }
 }
