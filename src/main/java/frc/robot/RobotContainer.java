@@ -10,7 +10,9 @@ package frc.robot;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.util.FileVersionException;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.XboxController;
@@ -59,6 +61,7 @@ public class RobotContainer {
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
+  private final LoggedDashboardChooser<Pose2d> initPosChooser;
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -129,9 +132,24 @@ public class RobotContainer {
         break;
     }
 
+    initPosChooser = new LoggedDashboardChooser<Pose2d>("Starting Positions");
+    initPosChooser.addDefaultOption("CHANGE ME", new Pose2d());
+    initPosChooser.addOption(
+        "Blue - Human player - Trench",
+        new Pose2d(3.638606071472168, 1.1230977773666382, Rotation2d.kZero));
+    initPosChooser.addOption(
+        "Blue - Depot - Trench",
+        new Pose2d(3.638606071472168, 8.0692 - 1.1230977773666382, Rotation2d.kZero));
+    initPosChooser.addOption(
+        "Red - Human player - Trench",
+        new Pose2d(3.638606071472168, 8.0692 - 1.1230977773666382, Rotation2d.kZero));
+    initPosChooser.addOption(
+        "Red - Depot - Trench",
+        new Pose2d(3.638606071472168, 1.1230977773666382, Rotation2d.kZero));
+
     // Set up auto routines
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
-    autoChooser.addDefaultOption("dont do anything", Commands.none());
+    autoChooser.addDefaultOption("None", Commands.none());
     // Set up SysId routines
     autoChooser.addOption(
         "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
@@ -164,6 +182,8 @@ public class RobotContainer {
       String[][] items = {
         // {name, description}
         {"FuelToucher", "Disturb balls -> shoot"},
+        {"FuelCollectorFull", "Push balls to side -> end on opposite trench"},
+        {"FuelCollectorHalf", "Push balls to side -> end on same trench"}
         // Add more here here
       };
 
@@ -225,9 +245,13 @@ public class RobotContainer {
     //             .ignoringDisable(true));
 
     // Hood positions
-    controller.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
-    controller.a().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
-    controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
+    controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0.2), shooter));
+    controller.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
+    controller.a().whileTrue(Commands.run(() -> shooter.quickServoCommand(1.75), shooter));
+
+    // Reset initial pos on auto init
+    new Trigger(() -> DriverStation.isAutonomousEnabled())
+        .onTrue(Commands.runOnce(() -> drive.setPose(FieldConstants.flip(initPosChooser.get()))));
 
     new Trigger(intake::isExtenderConnected).onTrue(Commands.runOnce(intake::setZeroPosition));
     // Press right trigger to run shooter startup
