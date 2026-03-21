@@ -2,15 +2,18 @@ package frc.robot.subsystems.shooter;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import frc.robot.OurConstants;
+import org.littletonrobotics.junction.Logger;
 
 public class TurretIOKrakens implements TurretIO {
   TalonFX motor;
@@ -32,12 +35,14 @@ public class TurretIOKrakens implements TurretIO {
     turretCurrent = motor.getStatorCurrent();
     turretAppliedOutput = motor.getMotorVoltage();
     var cfg = motor.getConfigurator();
-    cfg.apply(new Slot0Configs().withKV(12.0 / 100.0).withKP(0.5 * 12.0 / 100.0));
+    cfg.apply(new Slot0Configs().withKS(1).withKV(2 * 12.0 / 100.0).withKP(6 * 12.0 / 100.0));
+    cfg.apply(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake));
   }
 
   @Override
   public void commandPosition(double position) {
-    motor.setControl(new PositionVoltage(position * 100.0 / 10.0));
+    motor.setControl(new PositionVoltage(position * 440.0 / 10.0));
+    Logger.recordOutput("target", position);
   }
 
   @Override
@@ -47,6 +52,6 @@ public class TurretIOKrakens implements TurretIO {
     inputs.encoder_a_position = a_angle.getValue().in(Units.Rotations) - 0.023;
     inputs.encoder_b_position = b_angle.getValue().in(Units.Rotations) + 0.363;
     inputs.current = turretCurrent.getValueAsDouble();
-    inputs.position = turretPosition.getValue().in(Units.Rotations) * 10.0 / 100.0;
+    inputs.position = turretPosition.getValue().in(Units.Rotations) * 10.0 / 440.0;
   }
 }
