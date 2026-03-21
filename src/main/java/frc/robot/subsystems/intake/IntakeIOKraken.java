@@ -5,11 +5,13 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
+import com.ctre.phoenix6.configs.Slot1Configs;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
@@ -25,6 +27,9 @@ public class IntakeIOKraken implements IntakeIO {
   StatusSignal<AngularVelocity> extendVelocity;
   StatusSignal<Current> extendCurrent;
   StatusSignal<Voltage> extendAppliedVolts;
+  TrapezoidProfile.State cstate;
+  TrapezoidProfile.State commState;
+  TrapezoidProfile profile = new TrapezoidProfile(new TrapezoidProfile.Constraints(10, 10));
 
   public IntakeIOKraken(int intakeID, int extendID) {
     intakeMotor = new TalonFX(intakeID, OurConstants.INTAKE_CAN_BUS);
@@ -39,7 +44,8 @@ public class IntakeIOKraken implements IntakeIO {
     extendAppliedVolts = extendMotor.getMotorVoltage();
     var extend_cfgr = extendMotor.getConfigurator();
 
-    extend_cfgr.apply(new Slot0Configs().withKV(0.12).withKP(3).withKS(1));
+    extend_cfgr.apply(new Slot0Configs().withKP(3.5).withKV(0.12).withKS(1));
+    extend_cfgr.apply(new Slot1Configs().withKP(0.5).withKV(0.12).withKS(1));
     extend_cfgr.apply(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake));
     var intake_cfgr = intakeMotor.getConfigurator();
     intake_cfgr.apply(
@@ -74,6 +80,15 @@ public class IntakeIOKraken implements IntakeIO {
 
   @Override
   public void extenderPosition(double extendPosition) {
+    // commState
+    // profile.calculate(0.02, cstate, commState);
     extendMotor.setControl(new PositionVoltage(extendPosition));
+  }
+
+  @Override
+  public void extenderVelocity(double rps) {
+    // Positive rps means retracting
+    if (rps > 0) extendMotor.setControl(new VelocityVoltage(rps).withSlot(0));
+    else extendMotor.setControl(new VelocityVoltage(rps).withSlot(1));
   }
 }
