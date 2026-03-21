@@ -3,6 +3,7 @@ package frc.robot.subsystems.shooter;
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
@@ -52,7 +53,11 @@ public class Shooter extends SubsystemBase {
   public void commandTurretToTrack(Pose2d p2) {
     var hubPosition = FieldConstants.hub();
     var correctRotation =
-        hubPosition.toTranslation2d().minus(p2.getTranslation()).getAngle().minus(p2.getRotation());
+        hubPosition
+            .toTranslation2d()
+            .minus(p2.plus(new Transform2d()).getTranslation())
+            .getAngle()
+            .minus(p2.getRotation());
     commandTurret(correctRotation);
   }
 

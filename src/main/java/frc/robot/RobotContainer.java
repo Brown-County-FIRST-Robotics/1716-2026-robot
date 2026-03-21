@@ -219,6 +219,14 @@ public class RobotContainer {
             () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1)));
+    opcon
+        .a()
+        .whileTrue(
+            DriveCommands.joystickDriveRobotRelative(
+                drive,
+                () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+                () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+                () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1)));
 
     // Lock to 0° when A button is held
     //    controller
@@ -247,7 +255,6 @@ public class RobotContainer {
     // Hood positions
     controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0.2), shooter));
     controller.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
-    controller.a().whileTrue(Commands.run(() -> shooter.quickServoCommand(1.75), shooter));
 
     // Reset initial pos on auto init
     RobotModeTriggers.autonomous()
@@ -278,18 +285,25 @@ public class RobotContainer {
     opcon
         .povLeft()
         .onTrue(
-            Commands.run(
+            Commands.runOnce(
                 () ->
                     shooter.commandTurret(
                         shooter.getTurretRotation().plus(Rotation2d.fromRotations(0.1)))));
     opcon
         .povRight()
         .onTrue(
-            Commands.run(
+            Commands.runOnce(
                 () ->
                     shooter.commandTurret(
                         shooter.getTurretRotation().plus(Rotation2d.fromRotations(-0.1)))));
-    opcon.x().whileTrue(Commands.run(() -> shooter.commandTurretToTrack(drive.getPose()), shooter));
+    opcon
+        .x()
+        .whileTrue(
+            Commands.runEnd(
+                () -> shooter.commandTurretToTrack(drive.getPose()),
+                () -> shooter.commandTurret(Rotation2d.k180deg)));
+    opcon.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0.2), shooter));
+    opcon.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
 
     // Intake/hopper control
     opcon.rightTrigger().whileTrue(intake.extendHopperVelocity());
@@ -297,7 +311,14 @@ public class RobotContainer {
     // opcon.rightBumper().onTrue(intake.extendHopper());
     // opcon.leftBumper().onFalse(intake.retractHopper());
     opcon.rightBumper().whileTrue(intake.intake());
-    opcon.leftBumper().whileTrue(intake.intakeReverse());
+    opcon
+        .leftBumper()
+        .whileTrue(
+            intake
+                .intakeReverse()
+                .alongWith(
+                    Commands.runEnd(
+                        () -> rollers.setSpeeds(-20, 0), () -> rollers.setSpeeds(0, 0))));
 
     // Dpad
     controller
@@ -323,7 +344,7 @@ public class RobotContainer {
                 drive,
                 () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
                 () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-                () -> Rotation2d.kPi));
+                () -> Rotation2d.k180deg));
     controller
         .povLeft()
         .whileTrue(
