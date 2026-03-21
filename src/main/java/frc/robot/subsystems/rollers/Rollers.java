@@ -39,7 +39,7 @@ public class Rollers extends SubsystemBase {
   public void periodic() {
     io.updateInputs(inputs);
     Logger.processInputs("rollers", inputs);
-    kickerDisconnectedAlert.set(kickerConnectedDebouncer.calculate(inputs.kickerConnected));
-    rollerDisconnectedAlert.set(rollerConnectedDebouncer.calculate(inputs.rollersConnected));
+    kickerDisconnectedAlert.set(!kickerConnectedDebouncer.calculate(inputs.kickerConnected));
+    rollerDisconnectedAlert.set(!rollerConnectedDebouncer.calculate(inputs.rollersConnected));
   }
 }

@@ -92,7 +92,7 @@ public class Intake extends SubsystemBase {
   public void periodic() {
     io.updateInputs(inputs);
     Logger.processInputs("intake", inputs);
-    intakeDisconnectedAlert.set(intakeConnectedDebouncer.calculate(inputs.intakeConnected));
-    extendDisconnectedAlert.set(extendConnectedDebouncer.calculate(inputs.extendConnected));
+    intakeDisconnectedAlert.set(!intakeConnectedDebouncer.calculate(inputs.intakeConnected));
+    extendDisconnectedAlert.set(!extendConnectedDebouncer.calculate(inputs.extendConnected));
   }
 }
