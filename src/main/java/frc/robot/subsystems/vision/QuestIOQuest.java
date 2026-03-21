@@ -1,5 +1,7 @@
 package frc.robot.subsystems.vision;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import gg.questnav.questnav.QuestNav;
 
 public class QuestIOQuest implements QuestIO {
@@ -7,6 +9,10 @@ public class QuestIOQuest implements QuestIO {
 
   public QuestIOQuest(QuestNav qn) {
     this.qn = qn;
+  }
+
+  public void setPose(Pose2d pose) {
+    qn.setPose(new Pose3d(pose));
   }
 
   @Override
