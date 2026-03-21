@@ -23,4 +23,6 @@ public interface IntakeIO {
   default void extendSpeed(double extend_speed) {}
 
   default void extenderPosition(double position) {}
+
+  default void extenderVelocity(double rps) {}
 }
