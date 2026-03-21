@@ -10,6 +10,7 @@ package frc.robot;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.util.FileVersionException;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
@@ -59,6 +60,7 @@ public class RobotContainer {
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
+  private final LoggedDashboardChooser<Pose2d> initPosChooser;
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -83,7 +85,7 @@ public class RobotContainer {
                 new ModuleIOTalonFX(TunerConstants.BackLeft),
                 new ModuleIOTalonFX(TunerConstants.BackRight));
         shooter = new Shooter(new ShooterIOKrakens(62, 9), new TurretIOKrakens(36, 35, 22));
-        rollers = new Rollers(new RollersIOKraken(38, 37));
+        rollers = new Rollers(new RollersIOKraken(43, 37));
         intake = new Intake(new IntakeIOKraken(40, 38));
 
         // The ModuleIOTalonFXS implementation provides an example implementation for
@@ -129,6 +131,15 @@ public class RobotContainer {
         break;
     }
 
+    initPosChooser = new LoggedDashboardChooser<Pose2d>("Starting Positions");
+    initPosChooser.addDefaultOption("CHANGE ME", new Pose2d());
+    initPosChooser.addOption(
+        "Blue - Human player - Trench",
+        new Pose2d(3.638476848602295, 0.821435809135437, Rotation2d.kZero));
+    initPosChooser.addOption(
+        "Blue - Depot player - Trench",
+        new Pose2d(3.638476848602295, 7.226299285888672, Rotation2d.kZero));
+
     // Set up auto routines
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
     autoChooser.addDefaultOption("dont do anything", Commands.none());
@@ -164,6 +175,8 @@ public class RobotContainer {
       String[][] items = {
         // {name, description}
         {"FuelToucher", "Disturb balls -> shoot"},
+        {"FuelCollectorFull", "Push balls to side -> end on opposite trench"},
+        {"FuelCollectorHalf", "Push balls to side -> end on same trench"}
         // Add more here here
       };
 
@@ -225,9 +238,9 @@ public class RobotContainer {
     //             .ignoringDisable(true));
 
     // Hood positions
-    controller.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
-    controller.a().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
-    controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
+    controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0.2), shooter));
+    controller.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
+    controller.a().whileTrue(Commands.run(() -> shooter.quickServoCommand(1.75), shooter));
 
     new Trigger(intake::isExtenderConnected).onTrue(Commands.runOnce(intake::setZeroPosition));
     // Press right trigger to run shooter startup
@@ -237,13 +250,13 @@ public class RobotContainer {
             Commands.run(() -> shooter.setShooterSpeed(80), shooter)
                 .alongWith(
                     Commands.waitSeconds(0.3)
-                        .andThen(Commands.run(() -> rollers.setSpeeds(2, 20), rollers)))
+                        .andThen(Commands.run(() -> rollers.setSpeeds(20, 20), rollers)))
                 .alongWith(
                     Commands.race(
                             Commands.run(() -> controller.setRumble(RumbleType.kRightRumble, 0.5)),
-                            Commands.waitSeconds(0.3))
+                            Commands.waitSeconds(0.28))
                         .andThen(
-                            Commands.run(() -> controller.setRumble(RumbleType.kBothRumble, 0.5))))
+                            Commands.run(() -> controller.setRumble(RumbleType.kBothRumble, 1.0))))
                 .finallyDo(
                     () -> {
                       shooter.quickWheelCommand(0);
@@ -252,8 +265,11 @@ public class RobotContainer {
                     }));
 
     // Intake/hopper control
-    // controller.rightBumper().whileTrue(intake.extendHopper());
-    opcon.leftBumper().whileTrue(intake.retractHopper());
+    opcon.rightTrigger().whileTrue(intake.extendHopperVelocity());
+    opcon.leftTrigger().whileTrue(intake.retractHopperVelocity());
+    opcon.rightBumper().onTrue(intake.extendHopper());
+    opcon.leftBumper().onFalse(intake.retractHopper());
+
     controller.rightBumper().onTrue(intake.intake());
     controller.leftBumper().onTrue(intake.intakeReverse());
     controller.leftBumper().or(controller.rightBumper()).onFalse(intake.intakeStop());
