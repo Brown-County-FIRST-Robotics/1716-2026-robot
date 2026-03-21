@@ -83,7 +83,7 @@ public class RobotContainer {
                 new ModuleIOTalonFX(TunerConstants.BackLeft),
                 new ModuleIOTalonFX(TunerConstants.BackRight));
         shooter = new Shooter(new ShooterIOKrakens(62, 9), new TurretIOKrakens(36, 35, 22));
-        rollers = new Rollers(new RollersIOKraken(38, 37));
+        rollers = new Rollers(new RollersIOKraken(43, 37));
         intake = new Intake(new IntakeIOKraken(40, 38));
 
         // The ModuleIOTalonFXS implementation provides an example implementation for
@@ -164,6 +164,8 @@ public class RobotContainer {
       String[][] items = {
         // {name, description}
         {"FuelToucher", "Disturb balls -> shoot"},
+        {"FuelCollectorFull", "Push balls to side -> end on opposite trench"},
+        {"FuelCollectorHalf", "Push balls to side -> end on same trench"}
         // Add more here here
       };
 
@@ -225,9 +227,9 @@ public class RobotContainer {
     //             .ignoringDisable(true));
 
     // Hood positions
-    controller.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(2), shooter));
-    controller.a().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
-    controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
+    controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0.2), shooter));
+    controller.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
+    controller.a().whileTrue(Commands.run(() -> shooter.quickServoCommand(1.75), shooter));
 
     new Trigger(intake::isExtenderConnected).onTrue(Commands.runOnce(intake::setZeroPosition));
     // Press right trigger to run shooter startup
@@ -237,7 +239,7 @@ public class RobotContainer {
             Commands.run(() -> shooter.setShooterSpeed(80), shooter)
                 .alongWith(
                     Commands.waitSeconds(0.3)
-                        .andThen(Commands.run(() -> rollers.setSpeeds(2, 20), rollers)))
+                        .andThen(Commands.run(() -> rollers.setSpeeds(20, 20), rollers)))
                 .alongWith(
                     Commands.race(
                             Commands.run(() -> controller.setRumble(RumbleType.kRightRumble, 0.5)),
@@ -252,8 +254,11 @@ public class RobotContainer {
                     }));
 
     // Intake/hopper control
-    // controller.rightBumper().whileTrue(intake.extendHopper());
-    opcon.leftBumper().whileTrue(intake.retractHopper());
+    opcon.rightTrigger().whileTrue(intake.extendHopperVelocity());
+    opcon.leftTrigger().whileTrue(intake.retractHopperVelocity());
+    opcon.rightBumper().onTrue(intake.extendHopper());
+    opcon.leftBumper().onFalse(intake.retractHopper());
+
     controller.rightBumper().onTrue(intake.intake());
     controller.leftBumper().onTrue(intake.intakeReverse());
     controller.leftBumper().or(controller.rightBumper()).onFalse(intake.intakeStop());
