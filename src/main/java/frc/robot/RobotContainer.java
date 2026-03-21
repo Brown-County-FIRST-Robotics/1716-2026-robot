@@ -275,6 +275,21 @@ public class RobotContainer {
                       controller.setRumble(RumbleType.kBothRumble, 0);
                     }));
 
+    opcon
+        .povLeft()
+        .onTrue(
+            Commands.run(
+                () ->
+                    shooter.commandTurret(
+                        shooter.getTurretRotation().plus(Rotation2d.fromRotations(0.1)))));
+    opcon
+        .povRight()
+        .onTrue(
+            Commands.run(
+                () ->
+                    shooter.commandTurret(
+                        shooter.getTurretRotation().plus(Rotation2d.fromRotations(-0.1)))));
+
     // Intake/hopper control
     opcon.rightTrigger().whileTrue(intake.extendHopperVelocity());
     opcon.leftTrigger().whileTrue(intake.retractHopperVelocity());

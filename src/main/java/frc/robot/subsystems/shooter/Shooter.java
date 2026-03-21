@@ -18,6 +18,11 @@ public class Shooter extends SubsystemBase {
   ShooterIO shooterIO;
   TurretIO turretIO;
   TurretIOInputsAutoLogged turretInputs = new TurretIOInputsAutoLogged();
+
+  public Rotation2d getTurretRotation() {
+    return turret_rotation;
+  }
+
   Rotation2d turret_rotation = new Rotation2d();
   private static final double a_gear_ratio = 11.0 / 100.0;
   private static final double b_gear_ratio = 13.0 / 100.0;
@@ -39,8 +44,9 @@ public class Shooter extends SubsystemBase {
     return null;
   }
 
-  private void commandTurret(Rotation2d rotation2d) {
-    rotation2d.getRotations();
+  public void commandTurret(Rotation2d rotation2d) {
+    turretIO.commandPosition(
+        (rotation2d.minus(turret_rotation)).getRotations() + turretInputs.position);
   }
 
   // Turret, shooter
