@@ -289,6 +289,7 @@ public class RobotContainer {
                 () ->
                     shooter.commandTurret(
                         shooter.getTurretRotation().plus(Rotation2d.fromRotations(-0.1)))));
+    opcon.x().whileTrue(Commands.run(() -> shooter.commandTurretToTrack(drive.getPose()), shooter));
 
     // Intake/hopper control
     opcon.rightTrigger().whileTrue(intake.extendHopperVelocity());

@@ -49,6 +49,13 @@ public class Shooter extends SubsystemBase {
         (rotation2d.minus(turret_rotation)).getRotations() + turretInputs.position);
   }
 
+  public void commandTurretToTrack(Pose2d p2) {
+    var hubPosition = FieldConstants.hub();
+    var correctRotation =
+        hubPosition.toTranslation2d().minus(p2.getTranslation()).getAngle().minus(p2.getRotation());
+    commandTurret(correctRotation);
+  }
+
   // Turret, shooter
   private Pair<Rotation2d, Rotation2d> calcShootCommand(Pose2d currentPose) {
     var hubPosition = FieldConstants.hub();
