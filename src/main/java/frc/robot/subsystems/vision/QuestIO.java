@@ -1,5 +1,6 @@
 package frc.robot.subsystems.vision;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import org.littletonrobotics.junction.AutoLog;
 
@@ -13,4 +14,6 @@ public interface QuestIO {
   }
 
   default void updateInputs(QuestIOInputs inputs) {}
+
+  default void setPose(Pose2d pose) {}
 }
