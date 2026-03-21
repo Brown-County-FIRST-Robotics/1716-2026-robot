@@ -74,6 +74,6 @@ public class IntakeIOKraken implements IntakeIO {
 
   @Override
   public void extenderPosition(double extendPosition) {
-    extendMotor.setControl(new PositionVoltage(extendPosition));
+    extendMotor.setControl(new PositionVoltage(extendPosition).withVelocity(1));
   }
 }
