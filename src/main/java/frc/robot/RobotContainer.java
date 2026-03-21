@@ -12,13 +12,13 @@ import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.util.FileVersionException;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
@@ -250,7 +250,7 @@ public class RobotContainer {
     controller.a().whileTrue(Commands.run(() -> shooter.quickServoCommand(1.75), shooter));
 
     // Reset initial pos on auto init
-    new Trigger(() -> DriverStation.isAutonomousEnabled())
+    RobotModeTriggers.autonomous()
         .onTrue(Commands.runOnce(() -> drive.setPose(FieldConstants.flip(initPosChooser.get()))));
 
     new Trigger(intake::isExtenderConnected).onTrue(Commands.runOnce(intake::setZeroPosition));
