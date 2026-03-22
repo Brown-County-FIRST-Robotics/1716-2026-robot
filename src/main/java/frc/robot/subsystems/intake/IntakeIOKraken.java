@@ -58,16 +58,16 @@ public class IntakeIOKraken implements IntakeIO {
 
     // Motion magic control for extension/retraction
     var r_mmc = new TalonFXConfiguration().MotionMagic;
-    r_mmc.MotionMagicCruiseVelocity = 8;
-    r_mmc.MotionMagicAcceleration = 3;
-    r_mmc.MotionMagicJerk = 30;
+    r_mmc.MotionMagicCruiseVelocity = 16;
+    r_mmc.MotionMagicAcceleration = 32;
+    r_mmc.MotionMagicJerk = 320;
     extend_cfgr.apply(r_mmc);
 
     // Motion magic control for main motor
     var mmc = new TalonFXConfiguration().MotionMagic;
     mmc.MotionMagicCruiseVelocity = 100;
-    mmc.MotionMagicAcceleration = 75;
-    mmc.MotionMagicJerk = 75;
+    mmc.MotionMagicAcceleration = 200;
+    mmc.MotionMagicJerk = 600;
     intake_cfgr.apply(mmc);
   }
 
