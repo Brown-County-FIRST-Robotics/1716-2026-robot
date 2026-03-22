@@ -3,6 +3,7 @@ package frc.robot.subsystems.shooter;
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
@@ -45,14 +46,24 @@ public class Shooter extends SubsystemBase {
   }
 
   public void commandTurret(Rotation2d rotation2d) {
+    double position = rotation2d.getRotations();
+    if (position < 0) position += 1;
+    Logger.recordOutput("turret/autoAimPosRaw", position);
+    position = Math.min(0.55, Math.max(0.2, position)); // Clamp to hardware limits
+    Logger.recordOutput("turret/autoAimPosClamped", position);
     turretIO.commandPosition(
-        (rotation2d.minus(turret_rotation)).getRotations() + turretInputs.position);
+        (Rotation2d.fromRotations(position).minus(turret_rotation)).getRotations()
+            + turretInputs.position);
   }
 
   public void commandTurretToTrack(Pose2d p2) {
     var hubPosition = FieldConstants.hub();
     var correctRotation =
-        hubPosition.toTranslation2d().minus(p2.getTranslation()).getAngle().minus(p2.getRotation());
+        hubPosition
+            .toTranslation2d()
+            .minus(p2.plus(new Transform2d(-0.2, 0.3, Rotation2d.kZero)).getTranslation())
+            .getAngle()
+            .minus(p2.getRotation());
     commandTurret(correctRotation);
   }
 
