@@ -146,6 +146,8 @@ public class RobotContainer {
     initPosChooser.addOption(
         "Red - Depot - Trench",
         new Pose2d(3.638606071472168, 1.1230977773666382, Rotation2d.kZero));
+    initPosChooser.addOption(
+        "Centered on Hub", new Pose2d(3.638606071472168, 4.050412178039551, Rotation2d.kZero));
 
     // Set up auto routines
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
@@ -219,46 +221,42 @@ public class RobotContainer {
             () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1)));
+    opcon
+        .a()
+        .whileTrue(
+            DriveCommands.joystickDriveRobotRelative(
+                    drive,
+                    () ->
+                        -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+                    () ->
+                        -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+                    () ->
+                        -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1))
+                .alongWith(Commands.run(() -> shooter.commandTurret(Rotation2d.k180deg))));
 
-    // Lock to 0° when A button is held
-    //    controller
-    //        .a()
-    //        .whileTrue(
-    //            DriveCommands.joystickDriveAtAngle(
-    //                drive,
-    //                () -> -controller.getLeftY(),
-    //                () -> -controller.getLeftX(),
-    //                () -> Rotation2d.kZero));
+    // Track by default
+    shooter.setDefaultCommand(
+        Commands.run(() -> shooter.commandTurretToTrack(drive.getPose()), shooter));
 
     // Switch to X pattern when X button is pressed
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
-
-    // Reset pose rotation when B button is pressed
-    // controller
-    //     .b()
-    //     .onTrue(
-    //         Commands.runOnce(
-    //                 () ->
-    //                     drive.setPose(
-    //                         new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
-    //                 drive)
-    //             .ignoringDisable(true));
-
-    // Hood positions
-    controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0.2), shooter));
-    controller.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
-    controller.a().whileTrue(Commands.run(() -> shooter.quickServoCommand(1.75), shooter));
 
     // Reset initial pos on auto init
     RobotModeTriggers.autonomous()
         .onTrue(Commands.runOnce(() -> drive.setPose(FieldConstants.flip(initPosChooser.get()))));
 
     new Trigger(intake::isExtenderConnected).onTrue(Commands.runOnce(intake::setZeroPosition));
+    RobotModeTriggers.autonomous().onTrue(Commands.runOnce(intake::setZeroPosition));
     // Press right trigger to run shooter startup
     controller
         .rightTrigger(0.7)
         .whileTrue(
-            Commands.run(() -> shooter.setShooterSpeed(80), shooter)
+            Commands.run(
+                    () -> {
+                      shooter.setShooterSpeed(80);
+                      shooter.quickServoCommand(1);
+                    },
+                    shooter)
                 .alongWith(
                     Commands.waitSeconds(0.3)
                         .andThen(Commands.run(() -> rollers.setSpeeds(20, 20), rollers)))
@@ -272,32 +270,45 @@ public class RobotContainer {
                     () -> {
                       shooter.quickWheelCommand(0);
                       rollers.setSpeeds(0, 0);
+                      shooter.quickServoCommand(0);
                       controller.setRumble(RumbleType.kBothRumble, 0);
                     }));
 
     opcon
         .povLeft()
         .onTrue(
-            Commands.run(
+            Commands.runOnce(
                 () ->
                     shooter.commandTurret(
                         shooter.getTurretRotation().plus(Rotation2d.fromRotations(0.1)))));
     opcon
         .povRight()
         .onTrue(
-            Commands.run(
+            Commands.runOnce(
                 () ->
                     shooter.commandTurret(
                         shooter.getTurretRotation().plus(Rotation2d.fromRotations(-0.1)))));
-    opcon.x().whileTrue(Commands.run(() -> shooter.commandTurretToTrack(drive.getPose()), shooter));
+
+    // Hood positions
+    // controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
+    // controller.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
+    opcon.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
+    opcon.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
 
     // Intake/hopper control
     opcon.rightTrigger().whileTrue(intake.extendHopperVelocity());
     opcon.leftTrigger().whileTrue(intake.retractHopperVelocity());
-    // opcon.rightBumper().onTrue(intake.extendHopper());
-    // opcon.leftBumper().onFalse(intake.retractHopper());
+    // opcon.rightTrigger().onTrue(intake.extendHopper());
+    // opcon.leftTrigger().onTrue(intake.retractHopper());
     opcon.rightBumper().whileTrue(intake.intake());
-    opcon.leftBumper().whileTrue(intake.intakeReverse());
+    opcon
+        .leftBumper()
+        .whileTrue(
+            intake
+                .intakeReverse()
+                .alongWith(
+                    Commands.runEnd(
+                        () -> rollers.setSpeeds(-20, 0), () -> rollers.setSpeeds(0, 0))));
 
     // Dpad
     controller
@@ -323,7 +334,7 @@ public class RobotContainer {
                 drive,
                 () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
                 () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-                () -> Rotation2d.kPi));
+                () -> Rotation2d.k180deg));
     controller
         .povLeft()
         .whileTrue(
