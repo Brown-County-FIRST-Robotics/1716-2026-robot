@@ -78,7 +78,6 @@ public class IntakeIOKraken implements IntakeIO {
     var extendStatus =
         BaseStatusSignal.refreshAll(extendCurrent, extendAppliedVolts, extendVelocity);
 
-        
     inputs.intakeVelocity = intakeVelocity.getValue().in(Units.RotationsPerSecond);
     inputs.extendConnected = extendStatus.isOK();
     inputs.intakeAppliedVolts = intakeAppliedVolts.getValueAsDouble();

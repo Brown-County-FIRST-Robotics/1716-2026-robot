@@ -12,6 +12,7 @@ import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.util.FileVersionException;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.XboxController;
@@ -29,21 +30,23 @@ import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.intake.Intake;
-import frc.robot.subsystems.intake.IntakeIOKraken;
 import frc.robot.subsystems.intake.IntakeIO;
+import frc.robot.subsystems.intake.IntakeIOKraken;
 import frc.robot.subsystems.rollers.Rollers;
-import frc.robot.subsystems.rollers.RollersIOKraken;
 import frc.robot.subsystems.rollers.RollersIO;
+import frc.robot.subsystems.rollers.RollersIOKraken;
 import frc.robot.subsystems.shooter.Shooter;
-import frc.robot.subsystems.shooter.ShooterIOKrakens;
 import frc.robot.subsystems.shooter.ShooterIO;
-import frc.robot.subsystems.shooter.TurretIOKrakens;
+import frc.robot.subsystems.shooter.ShooterIOKrakens;
 import frc.robot.subsystems.shooter.TurretIO;
+import frc.robot.subsystems.shooter.TurretIOKrakens;
 import frc.robot.subsystems.vision.Quest;
 import frc.robot.subsystems.vision.QuestIOQuest;
+import frc.robot.utils.PeriodicRunnable;
 import gg.questnav.questnav.QuestNav;
 import java.io.IOException;
 import org.json.simple.parser.ParseException;
+import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -52,7 +55,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
  * subsystems, commands, and button mappings) should be declared here.
  */
-public class RobotContainer {
+public class RobotContainer extends PeriodicRunnable {
   // Subsystems
   private final Drive drive;
   private final Quest qwest;
@@ -69,6 +72,8 @@ public class RobotContainer {
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
+    super();
+    Logger.recordOutput("Time Left", -1);
     qwest = new Quest(new QuestIOQuest(new QuestNav()));
     switch (Constants.currentMode) {
       case REAL:
@@ -121,9 +126,9 @@ public class RobotContainer {
                 new ModuleIOSim(TunerConstants.FrontRight),
                 new ModuleIOSim(TunerConstants.BackLeft),
                 new ModuleIOSim(TunerConstants.BackRight));
-        shooter = new Shooter(new ShooterIO(){}, new TurretIO(){});
-        intake = new Intake(new IntakeIO(){});
-        rollers = new Rollers(new RollersIO(){});
+        shooter = new Shooter(new ShooterIO() {}, new TurretIO() {});
+        intake = new Intake(new IntakeIO() {});
+        rollers = new Rollers(new RollersIO() {});
 
         break;
 
@@ -191,9 +196,9 @@ public class RobotContainer {
       // the bottom left corner.
       String[][] items = {
         // {name, description}
-        {"FuelToucher", "Disturb balls -> shoot"},
-        {"FuelCollectorFull", "Push balls to side -> end on opposite trench"},
-        {"FuelCollectorHalf", "Push balls to side -> end on same trench"}
+        {"FuelToucher", "FULL FIELD - Push balls to side -> end on same trench"},
+        {"FuelCollectorFull", "FULL FIELD - Push balls to side -> end on opposite trench"},
+        {"FuelCollectorHalf", "HALF FIELD - Push balls to side -> end on same trench"}
         // Add more here here
       };
 
@@ -361,5 +366,47 @@ public class RobotContainer {
    */
   public Command getAutonomousCommand() {
     return autoChooser.get();
+  }
+
+  @Override
+  public void periodic() {
+    double matchTime = DriverStation.getMatchTime();
+
+    // Shift boundaries (seconds remaining in teleop)
+    // Teleop = 140s total
+    // Transition: 140-130, Shift1: 130-105, Shift2: 105-80,
+    // Shift3: 80-55, Shift4: 55-30, EndGame: 30-0
+    double timeUntilShiftEnd;
+    String currentPhase;
+
+    if (DriverStation.isDisabled()) {
+      currentPhase = "Disabled";
+      timeUntilShiftEnd = -1;
+    } else if (DriverStation.isAutonomous()) {
+      currentPhase = "Auto";
+      timeUntilShiftEnd = matchTime;
+    } else if (matchTime > 130) {
+      currentPhase = "Transition";
+      timeUntilShiftEnd = matchTime - 130.0;
+    } else if (matchTime > 105) {
+      currentPhase = "Shift 1";
+      timeUntilShiftEnd = matchTime - 105.0;
+    } else if (matchTime > 80) {
+      currentPhase = "Shift 2";
+      timeUntilShiftEnd = matchTime - 80.0;
+    } else if (matchTime > 55) {
+      currentPhase = "Shift 3";
+      timeUntilShiftEnd = matchTime - 55.0;
+    } else if (matchTime > 30) {
+      currentPhase = "Shift 4";
+      timeUntilShiftEnd = matchTime - 30.0;
+    } else {
+      currentPhase = "End Game";
+      timeUntilShiftEnd = matchTime;
+    }
+
+    Logger.recordOutput("Time Left", matchTime);
+    Logger.recordOutput("Shift Time Left", timeUntilShiftEnd);
+    Logger.recordOutput("Current Phase", currentPhase);
   }
 }

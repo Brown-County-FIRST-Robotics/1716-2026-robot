@@ -35,6 +35,8 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
@@ -102,6 +104,9 @@ public class Drive extends SubsystemBase {
       new SwerveDrivePoseEstimator(
           kinematics, rawGyroRotation, lastModulePositions, FieldConstants.ip());
 
+  // Full field for Elastic
+  private Field2d field;
+
   public Drive(
       Quest quest,
       GyroIO gyroIO,
@@ -109,6 +114,7 @@ public class Drive extends SubsystemBase {
       ModuleIO frModuleIO,
       ModuleIO blModuleIO,
       ModuleIO brModuleIO) {
+    field = new Field2d();
     this.quest = quest;
     this.gyroIO = gyroIO;
     modules[0] = new Module(flModuleIO, 0, TunerConstants.FrontLeft);
@@ -211,6 +217,10 @@ public class Drive extends SubsystemBase {
 
     // Update gyro alert
     gyroDisconnectedAlert.set(!gyroInputs.connected && Constants.currentMode != Mode.SIM);
+
+    // 2d field updates
+    field.setRobotPose(getPose());
+    SmartDashboard.putData("Field", field);
   }
 
   /**
