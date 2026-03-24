@@ -30,11 +30,15 @@ import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.IntakeIOKraken;
+import frc.robot.subsystems.intake.IntakeIO;
 import frc.robot.subsystems.rollers.Rollers;
 import frc.robot.subsystems.rollers.RollersIOKraken;
+import frc.robot.subsystems.rollers.RollersIO;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterIOKrakens;
+import frc.robot.subsystems.shooter.ShooterIO;
 import frc.robot.subsystems.shooter.TurretIOKrakens;
+import frc.robot.subsystems.shooter.TurretIO;
 import frc.robot.subsystems.vision.Quest;
 import frc.robot.subsystems.vision.QuestIOQuest;
 import gg.questnav.questnav.QuestNav;
@@ -117,6 +121,10 @@ public class RobotContainer {
                 new ModuleIOSim(TunerConstants.FrontRight),
                 new ModuleIOSim(TunerConstants.BackLeft),
                 new ModuleIOSim(TunerConstants.BackRight));
+        shooter = new Shooter(new ShooterIO(){}, new TurretIO(){});
+        intake = new Intake(new IntakeIO(){});
+        rollers = new Rollers(new RollersIO(){});
+
         break;
 
       default:
