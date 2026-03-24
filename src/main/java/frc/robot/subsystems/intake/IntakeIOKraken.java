@@ -77,14 +77,19 @@ public class IntakeIOKraken implements IntakeIO {
         BaseStatusSignal.refreshAll(intakeCurrent, intakeAppliedVolts, intakeVelocity);
     var extendStatus =
         BaseStatusSignal.refreshAll(extendCurrent, extendAppliedVolts, extendVelocity);
+
+        
+    inputs.intakeVelocity = intakeVelocity.getValue().in(Units.RotationsPerSecond);
     inputs.extendConnected = extendStatus.isOK();
+    inputs.intakeAppliedVolts = intakeAppliedVolts.getValueAsDouble();
+    inputs.intakeAppliedCurrent = intakeCurrent.getValueAsDouble();
+
+    inputs.extendVelocity = extendVelocity.getValue().in(Units.RotationsPerSecond);
     inputs.intakeConnected = intakeStatus.isOK();
     inputs.extendAppliedVolts = extendAppliedVolts.getValueAsDouble();
-    inputs.extendVelocity = extendVelocity.getValue().in(Units.RotationsPerSecond);
     inputs.extendAppliedCurrent = extendCurrent.getValueAsDouble();
-    inputs.intakeAppliedVolts = intakeAppliedVolts.getValueAsDouble();
-    inputs.intakeVelocity = intakeVelocity.getValue().in(Units.RotationsPerSecond);
-    inputs.intakeAppliedCurrent = intakeCurrent.getValueAsDouble();
+
+    inputs.extendPosition = extendMotor.getPosition().getValueAsDouble();
   }
 
   @Override

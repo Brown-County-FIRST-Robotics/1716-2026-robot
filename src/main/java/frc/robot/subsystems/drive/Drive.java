@@ -124,7 +124,7 @@ public class Drive extends SubsystemBase {
 
     // Configure AutoBuilder for PathPlanner
     AutoBuilder.configure(
-        this.quest::getPose,
+        this::getPose,
         this::setPose,
         this::getChassisSpeeds,
         this::runVelocity,
