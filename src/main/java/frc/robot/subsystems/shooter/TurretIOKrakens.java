@@ -34,7 +34,7 @@ public class TurretIOKrakens implements TurretIO {
     turretCurrent = motor.getStatorCurrent();
     turretAppliedOutput = motor.getMotorVoltage();
     var cfg = motor.getConfigurator();
-    cfg.apply(new Slot0Configs().withKS(1).withKV(2 * 12.0 / 100.0).withKP(6 * 12.0 / 100.0));
+    cfg.apply(new Slot0Configs().withKV(8 * 12.0 / 100.0).withKP(6 * 12.0 / 100.0));
     cfg.apply(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake));
   }
 
