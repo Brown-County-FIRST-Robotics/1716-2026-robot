@@ -2,8 +2,8 @@ package frc.robot.subsystems.shooter;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
-import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -13,6 +13,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import frc.robot.OurConstants;
+import org.littletonrobotics.junction.Logger;
 
 public class TurretIOKrakens implements TurretIO {
   TalonFX motor;
@@ -33,13 +34,23 @@ public class TurretIOKrakens implements TurretIO {
     turretPosition = motor.getPosition();
     turretCurrent = motor.getStatorCurrent();
     turretAppliedOutput = motor.getMotorVoltage();
-    var cfg = motor.getConfigurator();
-    cfg.apply(new Slot0Configs().withKS(1).withKV(2 * 12.0 / 100.0).withKP(6 * 12.0 / 100.0));
-    cfg.apply(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake));
+
+    var config = new TalonFXConfiguration();
+    config.Slot0 = new Slot0Configs().withKV(2.0 * 12.0 / 100.0).withKP(2.0 * 12.0 / 100.0);
+    config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+
+    var mmc = config.MotionMagic;
+
+    mmc.MotionMagicCruiseVelocity = 100;
+    mmc.MotionMagicAcceleration = 1000;
+    mmc.MotionMagicJerk = 10000;
+
+    // motor.getConfigurator().apply(config);
   }
 
   @Override
   public void commandPosition(double position) {
+    Logger.recordOutput("turret/realCommandPosition", position);
     motor.setControl(new PositionVoltage(position * 480.0 / 10.0));
   }
 
@@ -47,9 +58,10 @@ public class TurretIOKrakens implements TurretIO {
   public void updateInputs(TurretIOInputs inputs) {
     BaseStatusSignal.refreshAll(
         a_angle, b_angle, turretCurrent, turretAppliedOutput, turretPosition);
-    inputs.encoder_a_position = a_angle.getValue().in(Units.Rotations) - 0.023;
+    inputs.velocity = inputs.encoder_a_position = a_angle.getValue().in(Units.Rotations) - 0.023;
     inputs.encoder_b_position = b_angle.getValue().in(Units.Rotations) + 0.363;
     inputs.current = turretCurrent.getValueAsDouble();
     inputs.position = turretPosition.getValue().in(Units.Rotations) * 10.0 / 480.0;
+    inputs.appliedVolts = turretAppliedOutput.getValueAsDouble();
   }
 }
