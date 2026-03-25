@@ -13,6 +13,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import frc.robot.OurConstants;
+import org.littletonrobotics.junction.Logger;
 
 public class TurretIOKrakens implements TurretIO {
   TalonFX motor;
@@ -34,12 +35,13 @@ public class TurretIOKrakens implements TurretIO {
     turretCurrent = motor.getStatorCurrent();
     turretAppliedOutput = motor.getMotorVoltage();
     var cfg = motor.getConfigurator();
-    cfg.apply(new Slot0Configs().withKS(1).withKV(2 * 12.0 / 100.0).withKP(6 * 12.0 / 100.0));
+    cfg.apply(new Slot0Configs().withKV(4 * 12.0 / 100.0).withKP(6 * 12.0 / 100.0));
     cfg.apply(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake));
   }
 
   @Override
   public void commandPosition(double position) {
+    Logger.recordOutput("turret/realCommandPosition", position);
     motor.setControl(new PositionVoltage(position * 480.0 / 10.0));
   }
 
@@ -51,5 +53,6 @@ public class TurretIOKrakens implements TurretIO {
     inputs.encoder_b_position = b_angle.getValue().in(Units.Rotations) + 0.363;
     inputs.current = turretCurrent.getValueAsDouble();
     inputs.position = turretPosition.getValue().in(Units.Rotations) * 10.0 / 480.0;
+    inputs.appliedVolts = turretAppliedOutput.getValueAsDouble();
   }
 }
