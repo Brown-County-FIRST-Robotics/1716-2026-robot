@@ -2,6 +2,7 @@ package frc.robot.subsystems.shooter;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.PositionVoltage;
@@ -34,8 +35,14 @@ public class TurretIOKrakens implements TurretIO {
     turretCurrent = motor.getStatorCurrent();
     turretAppliedOutput = motor.getMotorVoltage();
     var cfg = motor.getConfigurator();
-    cfg.apply(new Slot0Configs().withKS(1).withKV(2 * 12.0 / 100.0).withKP(6 * 12.0 / 100.0));
+    cfg.apply(new Slot0Configs().withKV(4 * 12.0 / 100.0).withKP(6 * 12.0 / 100.0));
     cfg.apply(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake));
+
+    var mmc = new MotionMagicConfigs();
+    mmc.MotionMagicCruiseVelocity = 100;
+    mmc.MotionMagicAcceleration = 200;
+    mmc.MotionMagicJerk = 600;
+    cfg.apply(mmc);
   }
 
   @Override
