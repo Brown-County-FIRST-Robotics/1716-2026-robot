@@ -16,6 +16,8 @@ public interface TurretIO {
     public boolean motorConnected = false;
     public boolean encoderAConnected = false;
     public boolean encoderBConnected = false;
+
+    public double appliedVolts = 0.0;
   }
 
   // position is for motor, in rotations
