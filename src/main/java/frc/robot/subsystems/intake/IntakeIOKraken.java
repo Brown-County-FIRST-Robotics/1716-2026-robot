@@ -3,11 +3,11 @@ package frc.robot.subsystems.intake;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
+import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.Slot1Configs;
 import com.ctre.phoenix6.configs.Slot2Configs;
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
@@ -57,17 +57,17 @@ public class IntakeIOKraken implements IntakeIO {
     intake_cfgr.apply(new MotorOutputConfigs().withInverted(InvertedValue.Clockwise_Positive));
 
     // Motion magic control for extension/retraction
-    var r_mmc = new TalonFXConfiguration().MotionMagic;
-    r_mmc.MotionMagicCruiseVelocity = 12;
+    var r_mmc = new MotionMagicConfigs();
+    r_mmc.MotionMagicCruiseVelocity = 4;
     r_mmc.MotionMagicAcceleration = 16;
     r_mmc.MotionMagicJerk = 160;
     extend_cfgr.apply(r_mmc);
 
     // Motion magic control for main motor
-    var mmc = new TalonFXConfiguration().MotionMagic;
-    mmc.MotionMagicCruiseVelocity = 100;
-    mmc.MotionMagicAcceleration = 200;
-    mmc.MotionMagicJerk = 600;
+    var mmc = new MotionMagicConfigs();
+    mmc.MotionMagicCruiseVelocity = 25;
+    mmc.MotionMagicAcceleration = 100;
+    mmc.MotionMagicJerk = 300;
     intake_cfgr.apply(mmc);
   }
 
