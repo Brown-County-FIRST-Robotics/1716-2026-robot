@@ -271,12 +271,12 @@ public class RobotContainer extends PeriodicRunnable {
                     },
                     shooter)
                 .alongWith(
-                    Commands.waitSeconds(0.3)
+                    Commands.waitSeconds(0.4)
                         .andThen(Commands.run(() -> rollers.setSpeeds(20, 20), rollers)))
                 .alongWith(
                     Commands.race(
                             Commands.run(() -> controller.setRumble(RumbleType.kRightRumble, 0.5)),
-                            Commands.waitSeconds(0.275))
+                            Commands.waitSeconds(0.375))
                         .andThen(
                             Commands.run(() -> controller.setRumble(RumbleType.kBothRumble, 1.0))))
                 .finallyDo(
@@ -406,7 +406,7 @@ public class RobotContainer extends PeriodicRunnable {
     }
 
     Logger.recordOutput("Time Left", matchTime);
-    Logger.recordOutput("Shift Time Left", timeUntilShiftEnd);
+    Logger.recordOutput("Shift Time Left", Math.round(timeUntilShiftEnd * 100) / 100.0);
     Logger.recordOutput("Current Phase", currentPhase);
   }
 }
