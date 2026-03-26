@@ -44,6 +44,7 @@ public class Intake extends SubsystemBase {
   }
 
   public void setZeroPosition() {
+    Logger.recordOutput("test", inputs.extendPosition);
     extendedZeroPosition = inputs.extendPosition;
   }
 
@@ -92,6 +93,7 @@ public class Intake extends SubsystemBase {
   public void periodic() {
     io.updateInputs(inputs);
     Logger.processInputs("intake", inputs);
+    Logger.recordOutput("intake/distanceToZero", getRealExtenderPosition());
     intakeDisconnectedAlert.set(!intakeConnectedDebouncer.calculate(inputs.intakeConnected));
     extendDisconnectedAlert.set(!extendConnectedDebouncer.calculate(inputs.extendConnected));
   }
