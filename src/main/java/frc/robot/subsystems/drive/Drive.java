@@ -82,6 +82,9 @@ public class Drive extends SubsystemBase {
 
   static final Lock odometryLock = new ReentrantLock();
 
+  public boolean holdingAngle;
+  public Rotation2d targetAngle;
+
   public final Quest quest;
 
   private final GyroIO gyroIO;
@@ -115,6 +118,8 @@ public class Drive extends SubsystemBase {
       ModuleIO blModuleIO,
       ModuleIO brModuleIO) {
     field = new Field2d();
+    holdingAngle = false;
+    targetAngle = Rotation2d.kZero;
     this.quest = quest;
     this.gyroIO = gyroIO;
     modules[0] = new Module(flModuleIO, 0, TunerConstants.FrontLeft);
@@ -343,6 +348,12 @@ public class Drive extends SubsystemBase {
   public void setPose(Pose2d pose) {
     poseEstimator.resetPosition(rawGyroRotation, getModulePositions(), pose);
     if (quest.isConnected()) quest.setPose(pose);
+  }
+
+  /**  Resets the current holding angle of the robot */
+  public void resetHold() {
+    holdingAngle = false;
+    targetAngle = getRotation();
   }
 
   /** Adds a new timestamped vision measurement. */
