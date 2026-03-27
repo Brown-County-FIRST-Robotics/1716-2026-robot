@@ -31,6 +31,11 @@ import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
+class AngleHoldState {
+  boolean holding = false;
+  Rotation2d target = Rotation2d.kZero;
+}
+
 public class DriveCommands {
   private static final double DEADBAND = 0.1;
   private static final double DISTANCE_KP = 5.0;
@@ -71,45 +76,68 @@ public class DriveCommands {
       DoubleSupplier omegaSupplier,
       BooleanSupplier robotRelativeSupplier,
       BooleanSupplier snapToMajorAxis) {
+    ProfiledPIDController angleController =
+        new ProfiledPIDController(
+            ANGLE_KP,
+            0.0,
+            ANGLE_KD,
+            new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
+    angleController.enableContinuousInput(-Math.PI, Math.PI);
+
+    AngleHoldState hold = new AngleHoldState();
     return Commands.run(
-        () -> {
-          double x = xSupplier.getAsDouble();
-          double y = ySupplier.getAsDouble();
+            () -> {
+              double x = xSupplier.getAsDouble();
+              double y = ySupplier.getAsDouble();
 
-          if (snapToMajorAxis.getAsBoolean()) {
-            if (Math.abs(x) > Math.abs(y)) y = 0;
-            else x = 0;
-          }
+              if (snapToMajorAxis.getAsBoolean()) {
+                if (Math.abs(x) > Math.abs(y)) y = 0;
+                else x = 0;
+              }
 
-          // Get linear velocity
-          Translation2d linearVelocity = getLinearVelocityFromJoysticks(x, y);
+              // Get linear velocity
+              Translation2d linearVelocity = getLinearVelocityFromJoysticks(x, y);
 
-          // Apply rotation deadband
-          double omega = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), DEADBAND);
+              // Apply rotation deadband
+              double omega = omegaSupplier.getAsDouble();
 
-          // Square rotation value for more precise control
-          omega = Math.copySign(omega * omega, omega);
+              if (omega < DEADBAND) {
+                if (!hold.holding) {
+                  hold.holding = true;
+                  hold.target = drive.getRotation();
+                  angleController.reset(drive.getRotation().getRadians());
+                  omega = 0;
+                } else
+                  omega =
+                      angleController.calculate(
+                          drive.getRotation().getRadians(), hold.target.getRadians());
+              } else {
+                hold.holding = false;
+                // Square rotation value for more precise control
+                omega = Math.copySign(omega * omega, omega);
+              }
 
-          // Convert to field relative speeds & send command
-          ChassisSpeeds speeds =
-              new ChassisSpeeds(
-                  linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
-                  linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
-                  omega * drive.getMaxAngularSpeedRadPerSec());
-          boolean isFlipped =
-              DriverStation.getAlliance().isPresent()
-                  && DriverStation.getAlliance().get() == Alliance.Red;
+              // Convert to field relative speeds & send command
+              ChassisSpeeds speeds =
+                  new ChassisSpeeds(
+                      linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
+                      linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
+                      omega * drive.getMaxAngularSpeedRadPerSec());
+              boolean isFlipped =
+                  DriverStation.getAlliance().isPresent()
+                      && DriverStation.getAlliance().get() == Alliance.Red;
 
-          if (robotRelativeSupplier.getAsBoolean()) drive.runVelocity(speeds);
-          else
-            drive.runVelocity(
-                ChassisSpeeds.fromFieldRelativeSpeeds(
-                    speeds,
-                    isFlipped
-                        ? drive.getPose().getRotation().plus(new Rotation2d(Math.PI))
-                        : drive.getPose().getRotation()));
-        },
-        drive);
+              if (robotRelativeSupplier.getAsBoolean()) drive.runVelocity(speeds);
+              else
+                drive.runVelocity(
+                    ChassisSpeeds.fromFieldRelativeSpeeds(
+                        speeds,
+                        isFlipped
+                            ? drive.getPose().getRotation().plus(new Rotation2d(Math.PI))
+                            : drive.getPose().getRotation()));
+            },
+            drive)
+        .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()));
   }
 
   /**
