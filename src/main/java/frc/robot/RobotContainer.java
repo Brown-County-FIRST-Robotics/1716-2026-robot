@@ -13,6 +13,7 @@ import com.pathplanner.lib.util.FileVersionException;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.XboxController;
@@ -245,7 +246,26 @@ public class RobotContainer extends PeriodicRunnable {
                 () ->
                     DriveCommands.driveToPose(
                         drive,
-                        new Pose2d(drive.getPose().getX(), 0.6238498687744141, Rotation2d.kZero)),
+                        new Pose2d(
+                            drive.getPose().getX(),
+                            DriverStation.getAlliance().get() == Alliance.Red
+                                ? 0.6238498687744141
+                                : 8.0692 - 0.6238498687744141,
+                            Rotation2d.kZero)),
+                Set.of(drive)));
+    controller
+        .rightStick()
+        .whileTrue(
+            Commands.defer(
+                () ->
+                    DriveCommands.driveToPose(
+                        drive,
+                        new Pose2d(
+                            drive.getPose().getX(),
+                            DriverStation.getAlliance().get() == Alliance.Red
+                                ? 8.0692 - 0.6238498687744141
+                                : 0.6238498687744141,
+                            Rotation2d.kZero)),
                 Set.of(drive)));
 
     opcon.a().whileTrue(Commands.run(() -> shooter.commandTurret(Rotation2d.k180deg)));
