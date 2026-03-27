@@ -233,19 +233,17 @@ public class RobotContainer extends PeriodicRunnable {
             drive,
             () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-            () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1)));
-    opcon
-        .a()
+            () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+            opcon.a(),
+            controller.a()));
+
+    controller
+        .leftStick()
         .whileTrue(
-            DriveCommands.joystickDriveRobotRelative(
-                    drive,
-                    () ->
-                        -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-                    () ->
-                        -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-                    () ->
-                        -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1))
-                .alongWith(Commands.run(() -> shooter.commandTurret(Rotation2d.k180deg))));
+            DriveCommands.driveToPose(
+                drive, new Pose2d(drive.getPose().getX(), 0.6238498687744141, Rotation2d.kZero)));
+
+    opcon.a().whileTrue(Commands.run(() -> shooter.commandTurret(Rotation2d.k180deg)));
 
     // Track by default
     shooter.setDefaultCommand(
@@ -271,12 +269,12 @@ public class RobotContainer extends PeriodicRunnable {
                     },
                     shooter)
                 .alongWith(
-                    Commands.waitSeconds(0.3)
+                    Commands.waitSeconds(0.4)
                         .andThen(Commands.run(() -> rollers.setSpeeds(20, 20), rollers)))
                 .alongWith(
                     Commands.race(
                             Commands.run(() -> controller.setRumble(RumbleType.kRightRumble, 0.5)),
-                            Commands.waitSeconds(0.275))
+                            Commands.waitSeconds(0.375))
                         .andThen(
                             Commands.run(() -> controller.setRumble(RumbleType.kBothRumble, 1.0))))
                 .finallyDo(
@@ -309,10 +307,10 @@ public class RobotContainer extends PeriodicRunnable {
     opcon.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
 
     // Intake/hopper control
-    opcon.rightTrigger().whileTrue(intake.extendHopperVelocity());
-    opcon.leftTrigger().whileTrue(intake.retractHopperVelocity());
-    // opcon.rightTrigger().onTrue(intake.extendHopper());
-    // opcon.leftTrigger().onTrue(intake.retractHopper());
+    opcon.povUp().whileTrue(intake.extendHopperVelocity());
+    opcon.povDown().whileTrue(intake.retractHopperVelocity());
+    opcon.rightTrigger().onTrue(intake.extendHopper());
+    opcon.leftTrigger().onTrue(intake.retractHopper());
     opcon.rightBumper().whileTrue(intake.intake());
     opcon
         .leftBumper()
@@ -406,7 +404,7 @@ public class RobotContainer extends PeriodicRunnable {
     }
 
     Logger.recordOutput("Time Left", matchTime);
-    Logger.recordOutput("Shift Time Left", timeUntilShiftEnd);
+    Logger.recordOutput("Shift Time Left", Math.round(timeUntilShiftEnd * 100) / 100.0);
     Logger.recordOutput("Current Phase", currentPhase);
   }
 }
