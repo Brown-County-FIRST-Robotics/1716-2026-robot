@@ -1,0 +1,98 @@
+package frc.robot.subsystems.intake;
+
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.OurConstants;
+import org.littletonrobotics.junction.Logger;
+
+public class Intake extends SubsystemBase {
+  IntakeIO io;
+  IntakeIOInputsAutoLogged inputs = new IntakeIOInputsAutoLogged();
+  private final Debouncer intakeConnectedDebouncer =
+      new Debouncer(OurConstants.CONNECTED_DEBOUNCE_TIME, Debouncer.DebounceType.kFalling);
+  private final Debouncer extendConnectedDebouncer =
+      new Debouncer(OurConstants.CONNECTED_DEBOUNCE_TIME, Debouncer.DebounceType.kFalling);
+  private final Alert intakeDisconnectedAlert;
+  private final Alert extendDisconnectedAlert;
+  double extendedZeroPosition;
+
+  public Intake(IntakeIO io) {
+    this.io = io;
+    intakeDisconnectedAlert =
+        new Alert(
+            "Intake motor disconnected"
+                + (DriverStation.isFMSAttached() ? ". All hope is lost. " : ""),
+            Alert.AlertType.kError);
+    extendDisconnectedAlert =
+        new Alert(
+            "Intake extension motor disconnected"
+                + (DriverStation.isFMSAttached()
+                    ? " ___  _   _  _ ___ ___ \n"
+                        + "| _ \\/_\\ | \\| |_ _/ __|\n"
+                        + "|  _/ _ \\| .` || | (__ \n"
+                        + "|_|/_/ \\_\\_|\\_|___\\___|\n"
+                    : ""),
+            Alert.AlertType.kError);
+  }
+
+  public double getRealExtenderPosition() {
+    return inputs.extendPosition - extendedZeroPosition;
+  }
+
+  public void setZeroPosition() {
+    extendedZeroPosition = inputs.extendPosition;
+  }
+
+  public void setSpeeds(double intake_velocity, double extend_velocity) {
+    io.intakeSpeed(intake_velocity);
+    io.extendSpeed(extend_velocity);
+  }
+
+  public Command intake() {
+    return Commands.runEnd(() -> io.intakeSpeed(60), () -> io.intakeSpeed(0), this);
+  }
+
+  public Command intakeReverse() {
+    return Commands.runEnd(() -> io.intakeSpeed(-40), () -> io.intakeSpeed(0), this);
+  }
+
+  public Command intakeStop() {
+    return Commands.run(() -> io.intakeSpeed(0), this);
+  }
+
+  public Command extendHopper() {
+    return Commands.run(() -> io.extenderPosition(extendedZeroPosition + 14.1), this);
+  }
+
+  public Command retractHopper() {
+    return Commands.run(() -> io.extenderPosition(extendedZeroPosition), this);
+  }
+
+  public Command extendHopperVelocity() {
+    return Commands.runEnd(() -> io.extenderVelocity(4), () -> io.extenderVelocity(0), this);
+  }
+
+  public Command retractHopperVelocity() {
+    return Commands.runEnd(() -> io.extenderVelocity(-5), () -> io.extenderVelocity(0), this);
+  }
+
+  public Command retractStop() {
+    return Commands.run(() -> io.extenderVelocity(0), this);
+  }
+
+  public boolean isExtenderConnected() {
+    return inputs.extendConnected;
+  }
+
+  @Override
+  public void periodic() {
+    io.updateInputs(inputs);
+    Logger.processInputs("intake", inputs);
+    intakeDisconnectedAlert.set(!intakeConnectedDebouncer.calculate(inputs.intakeConnected));
+    extendDisconnectedAlert.set(!extendConnectedDebouncer.calculate(inputs.extendConnected));
+  }
+}
