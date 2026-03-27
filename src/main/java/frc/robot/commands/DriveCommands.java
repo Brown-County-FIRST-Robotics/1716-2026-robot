@@ -33,6 +33,8 @@ import java.util.function.Supplier;
 
 public class DriveCommands {
   private static final double DEADBAND = 0.1;
+  private static final double DISTANCE_KP = 1.0;
+  private static final double DISTANCE_KD = 1.0;
   private static final double ANGLE_KP = 8.0;
   private static final double ANGLE_KD = 0.4;
   private static final double ANGLE_MAX_VELOCITY = 8.0;
@@ -173,26 +175,27 @@ public class DriveCommands {
             ANGLE_KD,
             new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
     angleController.enableContinuousInput(-Math.PI, Math.PI);
+    ProfiledPIDController distanceController =
+        new ProfiledPIDController(
+            DISTANCE_KP, 0.0, DISTANCE_KD, new TrapezoidProfile.Constraints(1, 1));
+    distanceController.enableContinuousInput(0, Math.sqrt(8 * 8 + 16.541 * 16.541));
 
     return Commands.run(
             () -> {
-              double ms = drive.getMaxLinearSpeedMetersPerSec();
-
               Pose2d self = drive.getPose();
 
-              double x = (target.getX() - self.getX()) * 6 * ms;
-              double y = (target.getY() - self.getY()) * 6 * ms;
+              double x = target.getX() - self.getX();
+              double y = target.getY() - self.getY();
+
+              double diff = Math.sqrt(x * x + y * y);
+              double scalar = distanceController.calculate(diff, 0);
 
               double theta =
                   angleController.calculate(
                       drive.getRotation().getRadians(), target.getRotation().getRadians());
               // double theta = 0;
 
-              ChassisSpeeds speeds =
-                  new ChassisSpeeds(
-                      MathUtil.clamp(x, -ms / 2, ms / 2),
-                      MathUtil.clamp(y, -ms / 2, ms / 2),
-                      theta);
+              ChassisSpeeds speeds = new ChassisSpeeds(x * scalar, y * scalar, theta);
 
               boolean isFlipped =
                   DriverStation.getAlliance().isPresent()
@@ -206,7 +209,12 @@ public class DriveCommands {
                           : drive.getPose().getRotation()));
             },
             drive)
-        .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()));
+        .beforeStarting(
+            () -> {
+              angleController.reset(drive.getRotation().getRadians());
+              distanceController.reset(
+                  drive.getPose().getTranslation().getDistance(target.getTranslation()));
+            });
   }
 
   /**
