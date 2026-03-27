@@ -350,7 +350,7 @@ public class Drive extends SubsystemBase {
     if (quest.isConnected()) quest.setPose(pose);
   }
 
-  /**  Resets the current holding angle of the robot */
+  /** Resets the current holding angle of the robot */
   public void resetHold() {
     holdingAngle = false;
     targetAngle = getRotation();

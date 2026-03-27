@@ -280,8 +280,8 @@ public class RobotContainer extends PeriodicRunnable {
     // Reset initial pos on auto init
     RobotModeTriggers.autonomous()
         .onTrue(Commands.runOnce(() -> drive.setPose(FieldConstants.flip(initPosChooser.get()))));
-    
-    RobotModeTriggers.disabled().onFalse(Commands.runOnce(() ->drive.resetHold()));
+
+    RobotModeTriggers.disabled().onFalse(Commands.runOnce(drive::resetHold));
 
     new Trigger(intake::isExtenderConnected).onTrue(Commands.runOnce(intake::setZeroPosition));
     RobotModeTriggers.autonomous().onTrue(Commands.runOnce(intake::setZeroPosition));

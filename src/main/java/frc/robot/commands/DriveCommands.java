@@ -89,6 +89,8 @@ public class DriveCommands {
             new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
     angleController.enableContinuousInput(-Math.PI, Math.PI);
 
+    drive.resetHold();
+
     return Commands.run(
             () -> {
               double x = xSupplier.getAsDouble();
