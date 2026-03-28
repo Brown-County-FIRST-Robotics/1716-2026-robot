@@ -141,7 +141,11 @@ public class DriveCommands {
                             : drive.getPose().getRotation()));
             },
             drive)
-        .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()));
+        .beforeStarting(
+            () -> {
+              angleController.reset(drive.getRotation().getRadians());
+              drive.resetHold();
+            });
   }
 
   /**
