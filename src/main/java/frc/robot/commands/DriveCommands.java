@@ -77,12 +77,18 @@ public class DriveCommands {
   /**
    * Field/robot relative drive command using two joysticks (controlling linear and angular
    * velocities).
+   *
+   * <p>If target<var> == null it will use the supplier, otherwise it will use the provided value as
+   * a target position
    */
   public static Command joystickDrive(
       Drive drive,
       DoubleSupplier xSupplier,
       DoubleSupplier ySupplier,
       DoubleSupplier omegaSupplier,
+      Double targetX,
+      Double targetY,
+      Rotation2d targetTheta,
       BooleanSupplier robotRelativeSupplier,
       BooleanSupplier snapToMajorAxis) {
     ProfiledPIDController angleController =
@@ -126,7 +132,9 @@ public class DriveCommands {
               ChassisSpeeds currentSpeeds = drive.getChassisSpeeds();
 
               // ############ ROTATION AND TRANSLATION HOLDING ############
-              if (Math.abs(omega) < DEADBAND) {
+              // If the target parameter is null, drive normally (using the supplier)
+              // otherwise use the target parameter (initialized in the .beforeStarting())
+              if (Math.abs(omega) < DEADBAND || targetTheta != null) {
                 if (!drive.holdingAngle) {
                   drive.holdingAngle = true;
                   drive.targetAngle =
@@ -146,7 +154,7 @@ public class DriveCommands {
                 omega = Math.copySign(omega * omega, omega) * drive.getMaxAngularSpeedRadPerSec();
               }
 
-              if (Math.abs(x) < DEADBAND) {
+              if (Math.abs(x) < DEADBAND || targetX != null) {
                 if (!drive.holdingX) {
                   drive.holdingX = true;
                   drive.targetX =
@@ -160,7 +168,7 @@ public class DriveCommands {
                 drive.holdingX = false;
                 x = Math.copySign(x * x, x) * drive.getMaxLinearSpeedMetersPerSec();
               }
-              if (Math.abs(y) < DEADBAND) {
+              if (Math.abs(y) < DEADBAND || targetY != null) {
                 if (!drive.holdingY) {
                   drive.holdingY = true;
                   drive.targetY =
@@ -195,6 +203,19 @@ public class DriveCommands {
             () -> {
               angleController.reset(drive.getRotation().getRadians());
               drive.resetHold();
+
+              if (targetX != null) {
+                drive.holdingX = true;
+                drive.targetX = targetX;
+              }
+              if (targetY != null) {
+                drive.holdingY = true;
+                drive.targetY = targetY;
+              }
+              if (targetTheta != null) {
+                drive.holdingAngle = true;
+                drive.targetAngle = targetTheta;
+              }
             });
   }
 
