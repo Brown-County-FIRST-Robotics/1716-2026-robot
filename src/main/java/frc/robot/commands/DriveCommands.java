@@ -88,6 +88,7 @@ public class DriveCommands {
             ANGLE_KD,
             new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
     angleController.enableContinuousInput(-Math.PI, Math.PI);
+    angleController.setTolerance(Rotation2d.fromDegrees(5).getRadians());
 
     return Commands.run(
             () -> {
@@ -111,10 +112,11 @@ public class DriveCommands {
                   drive.targetAngle = drive.getRotation();
                   angleController.reset(drive.getRotation().getRadians());
                   omega = 0;
-                } else
+                } else if (!angleController.atGoal())
                   omega =
                       angleController.calculate(
                           drive.getRotation().getRadians(), drive.targetAngle.getRadians());
+                else omega = 0;
               } else {
                 drive.holdingAngle = false;
                 // Square rotation value for more precise control
@@ -141,7 +143,11 @@ public class DriveCommands {
                             : drive.getPose().getRotation()));
             },
             drive)
-        .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()));
+        .beforeStarting(
+            () -> {
+              angleController.reset(drive.getRotation().getRadians());
+              drive.resetHold();
+            });
   }
 
   /**
