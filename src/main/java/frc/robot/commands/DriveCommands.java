@@ -54,9 +54,9 @@ public class DriveCommands {
   private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
   private static final double WHEEL_RADIUS_RAMP_RATE = 0.05; // Rad/Sec^2
 
-  private static final double LOOKAHEAD_X = 0.25; // m/sec
-  private static final double LOOKAHEAD_Y = 0.25; // m/sec
-  private static final double LOOKAHEAD_Z = 0.25; // Rad/sec
+  private static final double LOOKAHEAD_X = 0.1; // m/sec
+  private static final double LOOKAHEAD_Y = 0.1; // m/sec
+  private static final double LOOKAHEAD_Z = 0.15; // Rad/sec
 
   private DriveCommands() {}
 
