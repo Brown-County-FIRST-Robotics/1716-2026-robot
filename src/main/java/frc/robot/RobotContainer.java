@@ -236,7 +236,7 @@ public class RobotContainer extends PeriodicRunnable {
             () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-            opcon.a(),
+            () -> !qwest.isConnected(),
             controller.rightBumper()));
 
     controller
@@ -268,7 +268,8 @@ public class RobotContainer extends PeriodicRunnable {
                             Rotation2d.kZero)),
                 Set.of(drive)));
 
-    opcon.a().whileTrue(Commands.run(() -> shooter.commandTurret(Rotation2d.k180deg)));
+    new Trigger(qwest::isConnected)
+        .whileFalse(Commands.run(() -> shooter.commandTurret(Rotation2d.k180deg)));
 
     // Track by default
     shooter.setDefaultCommand(

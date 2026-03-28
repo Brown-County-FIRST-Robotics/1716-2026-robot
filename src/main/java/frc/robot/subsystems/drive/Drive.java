@@ -224,6 +224,9 @@ public class Drive extends SubsystemBase {
       poseEstimator.updateWithTime(sampleTimestamps[i], rawGyroRotation, modulePositions);
     }
 
+    // If the quest is connected, use that instead
+    if (quest.isConnected()) poseEstimator.resetPose(quest.getPose());
+
     // Update gyro alert
     gyroDisconnectedAlert.set(!gyroInputs.connected && Constants.currentMode != Mode.SIM);
 
