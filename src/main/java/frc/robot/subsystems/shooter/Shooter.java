@@ -49,7 +49,7 @@ public class Shooter extends SubsystemBase {
     double position = rotation2d.getRotations();
     if (position < 0) position += 1;
     Logger.recordOutput("turret/autoAimPosRaw", position);
-    position = Math.min(0.55, Math.max(0.2, position)); // Clamp to hardware limits
+    position = Math.min(0.14, Math.max(-0.25, position)); // Clamp to hardware limits
     Logger.recordOutput("turret/autoAimPosClamped", position);
     turretIO.commandPosition(
         (Rotation2d.fromRotations(position).minus(turret_rotation)).getRotations()
