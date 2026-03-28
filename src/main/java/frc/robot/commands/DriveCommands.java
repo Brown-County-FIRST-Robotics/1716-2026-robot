@@ -43,7 +43,7 @@ class AngleHoldState {
 
 public class DriveCommands {
   private static final double DEADBAND = 0.1;
-  private static final double DISTANCE_KP = 4.0;
+  private static final double DISTANCE_KP = 3.25;
   private static final double DISTANCE_KD = 0.05;
   private static final double ANGLE_KP = 8.0;
   private static final double ANGLE_KD = 0.4;
@@ -54,9 +54,9 @@ public class DriveCommands {
   private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
   private static final double WHEEL_RADIUS_RAMP_RATE = 0.05; // Rad/Sec^2
 
-  private static final double LOOKAHEAD_X = 0.25; // m/sec
-  private static final double LOOKAHEAD_Y = 0.25; // m/sec
-  private static final double LOOKAHEAD_Z = 0.25; // Rad/sec
+  private static final double LOOKAHEAD_X = 0.2; // m/sec
+  private static final double LOOKAHEAD_Y = 0.2; // m/sec
+  private static final double LOOKAHEAD_Z = 0.15; // Rad/sec
 
   private DriveCommands() {}
 
@@ -123,7 +123,9 @@ public class DriveCommands {
 
               double omega = omegaSupplier.getAsDouble();
 
-              ChassisSpeeds currentSpeeds = drive.getChassisSpeeds();
+              ChassisSpeeds currentSpeeds =
+                  ChassisSpeeds.fromRobotRelativeSpeeds(
+                      drive.getChassisSpeeds(), drive.getRotation());
 
               // ############ ROTATION AND TRANSLATION HOLDING ############
               if (Math.abs(omega) < DEADBAND) {
