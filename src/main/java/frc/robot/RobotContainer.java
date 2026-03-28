@@ -302,7 +302,7 @@ public class RobotContainer extends PeriodicRunnable {
     controller
         .rightTrigger(0.7)
         .whileTrue(
-            Commands.run(
+            Commands.runOnce(
                     () -> {
                       shooter.setShooterSpeed(80);
                       shooter.quickServoCommand(1);
