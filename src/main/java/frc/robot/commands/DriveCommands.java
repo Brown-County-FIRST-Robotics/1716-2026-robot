@@ -88,6 +88,7 @@ public class DriveCommands {
             ANGLE_KD,
             new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
     angleController.enableContinuousInput(-Math.PI, Math.PI);
+    angleController.setTolerance(Rotation2d.fromDegrees(5).getRadians());
 
     return Commands.run(
             () -> {
@@ -141,7 +142,11 @@ public class DriveCommands {
                             : drive.getPose().getRotation()));
             },
             drive)
-        .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()));
+        .beforeStarting(
+            () -> {
+              angleController.reset(drive.getRotation().getRadians());
+              drive.resetHold();
+            });
   }
 
   /**
