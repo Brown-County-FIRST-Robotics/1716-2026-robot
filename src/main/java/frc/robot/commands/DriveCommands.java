@@ -54,6 +54,10 @@ public class DriveCommands {
   private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
   private static final double WHEEL_RADIUS_RAMP_RATE = 0.05; // Rad/Sec^2
 
+  private static final double LOOKAHEAD_X = 0.25; // m/sec
+  private static final double LOOKAHEAD_Y = 0.25; // m/sec
+  private static final double LOOKAHEAD_Z = 0.25; // Rad/sec
+
   private DriveCommands() {}
 
   private static Translation2d getLinearVelocityFromJoysticks(double x, double y) {
@@ -119,11 +123,18 @@ public class DriveCommands {
 
               double omega = omegaSupplier.getAsDouble();
 
+              ChassisSpeeds currentSpeeds = drive.getChassisSpeeds();
+
               // ############ ROTATION AND TRANSLATION HOLDING ############
               if (Math.abs(omega) < DEADBAND) {
                 if (!drive.holdingAngle) {
                   drive.holdingAngle = true;
-                  drive.targetAngle = drive.getRotation();
+                  drive.targetAngle =
+                      drive
+                          .getRotation()
+                          .plus(
+                              Rotation2d.fromRadians(
+                                  currentSpeeds.omegaRadiansPerSecond * LOOKAHEAD_Z));
                   angleController.reset(drive.targetAngle.getRadians());
                   omega = 0;
                 } else
@@ -138,7 +149,8 @@ public class DriveCommands {
               if (Math.abs(x) < DEADBAND) {
                 if (!drive.holdingX) {
                   drive.holdingX = true;
-                  drive.targetX = drive.getTranslation().getX();
+                  drive.targetX =
+                      drive.getTranslation().getX() + currentSpeeds.vxMetersPerSecond * LOOKAHEAD_X;
                   distanceControllerX.reset(drive.targetX);
                   x = 0;
                 } else if (!distanceControllerX.atGoal())
@@ -151,7 +163,8 @@ public class DriveCommands {
               if (Math.abs(y) < DEADBAND) {
                 if (!drive.holdingY) {
                   drive.holdingY = true;
-                  drive.targetY = drive.getTranslation().getY();
+                  drive.targetY =
+                      drive.getTranslation().getY() + currentSpeeds.vyMetersPerSecond * LOOKAHEAD_Y;
                   distanceControllerY.reset(drive.targetY);
                   y = 0;
                 } else if (!distanceControllerY.atGoal())
