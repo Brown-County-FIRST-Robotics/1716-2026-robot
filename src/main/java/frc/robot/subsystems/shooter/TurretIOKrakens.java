@@ -45,7 +45,7 @@ public class TurretIOKrakens implements TurretIO {
     mmc.MotionMagicAcceleration = 100;
     mmc.MotionMagicJerk = 1000;
 
-    config.CurrentLimits.StatorCurrentLimit = 5;
+    config.CurrentLimits.StatorCurrentLimit = 50;
     config.CurrentLimits.StatorCurrentLimitEnable = true;
 
     motor.getConfigurator().apply(config);
@@ -53,6 +53,8 @@ public class TurretIOKrakens implements TurretIO {
 
   @Override
   public void commandPosition(double position) {
+    Logger.recordOutput("turret/rawCommandPosition", position);
+    position = Math.min(0.14, Math.max(-0.28, position)); // Clamp to hardware limits
     Logger.recordOutput("turret/realCommandPosition", position);
     var request = new MotionMagicVoltage(0);
     motor.setControl(request.withPosition(position * 480.0 / 10.0));
