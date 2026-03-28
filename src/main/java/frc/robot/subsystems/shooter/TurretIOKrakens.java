@@ -45,7 +45,7 @@ public class TurretIOKrakens implements TurretIO {
     mmc.MotionMagicAcceleration = 100;
     mmc.MotionMagicJerk = 1000;
 
-    config.CurrentLimits.StatorCurrentLimit = 5;
+    config.CurrentLimits.StatorCurrentLimit = 80;
     config.CurrentLimits.StatorCurrentLimitEnable = true;
 
     motor.getConfigurator().apply(config);
