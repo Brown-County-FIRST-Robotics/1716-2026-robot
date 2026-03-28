@@ -88,6 +88,22 @@ public class DriveCommands {
             ANGLE_KD,
             new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
     angleController.enableContinuousInput(-Math.PI, Math.PI);
+    angleController.setTolerance(Rotation2d.fromDegrees(5).getRadians());
+
+    ProfiledPIDController distanceControllerX =
+        new ProfiledPIDController(
+            DISTANCE_KP,
+            0.0,
+            DISTANCE_KD,
+            new TrapezoidProfile.Constraints(
+                drive.getMaxLinearSpeedMetersPerSec(), drive.getMaxLinearSpeedMetersPerSec()));
+    ProfiledPIDController distanceControllerY =
+        new ProfiledPIDController(
+            DISTANCE_KP,
+            0.0,
+            DISTANCE_KD,
+            new TrapezoidProfile.Constraints(
+                drive.getMaxLinearSpeedMetersPerSec(), drive.getMaxLinearSpeedMetersPerSec()));
 
     return Commands.run(
             () -> {
@@ -105,11 +121,12 @@ public class DriveCommands {
               // Apply rotation deadband
               double omega = omegaSupplier.getAsDouble();
 
+              // ############ ROTATION AND TRANSLATION HOLDING ############
               if (Math.abs(omega) < DEADBAND) {
                 if (!drive.holdingAngle) {
                   drive.holdingAngle = true;
                   drive.targetAngle = drive.getRotation();
-                  angleController.reset(drive.getRotation().getRadians());
+                  angleController.reset(drive.targetAngle.getRadians());
                   omega = 0;
                 } else
                   omega =
@@ -117,8 +134,32 @@ public class DriveCommands {
                           drive.getRotation().getRadians(), drive.targetAngle.getRadians());
               } else {
                 drive.holdingAngle = false;
-                // Square rotation value for more precise control
                 omega = Math.copySign(omega * omega, omega) * drive.getMaxAngularSpeedRadPerSec();
+              }
+
+              if (Math.abs(x) < DEADBAND) {
+                if (!drive.holdingX) {
+                  drive.holdingX = true;
+                  drive.targetX = drive.getTranslation().getX();
+                  distanceControllerX.reset(drive.targetX);
+                  x = 0;
+                } else
+                  x = distanceControllerX.calculate(drive.getTranslation().getX(), drive.targetX);
+              } else {
+                drive.holdingX = false;
+                x = Math.copySign(x * x, x) * drive.getMaxLinearSpeedMetersPerSec();
+              }
+              if (Math.abs(y) < DEADBAND) {
+                if (!drive.holdingY) {
+                  drive.holdingY = true;
+                  drive.targetY = drive.getTranslation().getY();
+                  distanceControllerY.reset(drive.targetY);
+                  y = 0;
+                } else
+                  y = distanceControllerY.calculate(drive.getTranslation().getY(), drive.targetY);
+              } else {
+                drive.holdingY = false;
+                y = Math.copySign(y * y, y) * drive.getMaxLinearSpeedMetersPerSec();
               }
 
               // Convert to field relative speeds & send command
@@ -141,7 +182,11 @@ public class DriveCommands {
                             : drive.getPose().getRotation()));
             },
             drive)
-        .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()));
+        .beforeStarting(
+            () -> {
+              angleController.reset(drive.getRotation().getRadians());
+              drive.resetHold();
+            });
   }
 
   /**

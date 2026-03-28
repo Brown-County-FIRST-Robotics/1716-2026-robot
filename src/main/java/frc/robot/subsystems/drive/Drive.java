@@ -84,6 +84,10 @@ public class Drive extends SubsystemBase {
 
   public boolean holdingAngle;
   public Rotation2d targetAngle;
+  public boolean holdingX;
+  public boolean holdingY;
+  public double targetX;
+  public double targetY;
 
   public final Quest quest;
 
@@ -344,16 +348,24 @@ public class Drive extends SubsystemBase {
     return getPose().getRotation();
   }
 
+  public Translation2d getTranslation() {
+    return getPose().getTranslation();
+  }
+
   /** Resets the current odometry pose. */
   public void setPose(Pose2d pose) {
     poseEstimator.resetPosition(rawGyroRotation, getModulePositions(), pose);
     if (quest.isConnected()) quest.setPose(pose);
   }
 
-  /**  Resets the current holding angle of the robot */
+  /** Resets the current holding angle of the robot */
   public void resetHold() {
     holdingAngle = false;
     targetAngle = getRotation();
+    holdingX = false;
+    holdingY = false;
+    targetX = getTranslation().getX();
+    targetY = getTranslation().getY();
   }
 
   /** Adds a new timestamped vision measurement. */
