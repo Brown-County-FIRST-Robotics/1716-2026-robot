@@ -237,7 +237,7 @@ public class RobotContainer extends PeriodicRunnable {
             () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             opcon.a(),
-            controller.a()));
+            controller.rightBumper()));
 
     controller
         .leftStick()
@@ -275,13 +275,13 @@ public class RobotContainer extends PeriodicRunnable {
         Commands.run(() -> shooter.commandTurretToTrack(drive.getPose()), shooter));
 
     // Switch to X pattern when X button is pressed
-    controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+    // controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
     // Reset initial pos on auto init
     RobotModeTriggers.autonomous()
         .onTrue(Commands.runOnce(() -> drive.setPose(FieldConstants.flip(initPosChooser.get()))));
-    
-    RobotModeTriggers.disabled().onFalse(Commands.runOnce(() ->drive.resetHold()));
+
+    RobotModeTriggers.disabled().onFalse(Commands.runOnce(drive::resetHold));
 
     new Trigger(intake::isExtenderConnected).onTrue(Commands.runOnce(intake::setZeroPosition));
     RobotModeTriggers.autonomous().onTrue(Commands.runOnce(intake::setZeroPosition));
@@ -328,8 +328,6 @@ public class RobotContainer extends PeriodicRunnable {
                         shooter.getTurretRotation().plus(Rotation2d.fromRotations(-0.1)))));
 
     // Hood positions
-    // controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
-    // controller.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
     opcon.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
     opcon.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
 
@@ -349,38 +347,10 @@ public class RobotContainer extends PeriodicRunnable {
                         () -> rollers.setSpeeds(-20, 0), () -> rollers.setSpeeds(0, 0))));
 
     // Dpad
-    controller
-        .povUp()
-        .whileTrue(
-            DriveCommands.joystickDriveAtAngle(
-                drive,
-                () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-                () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-                () -> Rotation2d.kZero));
-    controller
-        .povRight()
-        .whileTrue(
-            DriveCommands.joystickDriveAtAngle(
-                drive,
-                () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-                () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-                () -> Rotation2d.kCW_90deg));
-    controller
-        .povDown()
-        .whileTrue(
-            DriveCommands.joystickDriveAtAngle(
-                drive,
-                () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-                () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-                () -> Rotation2d.k180deg));
-    controller
-        .povLeft()
-        .whileTrue(
-            DriveCommands.joystickDriveAtAngle(
-                drive,
-                () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-                () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-                () -> Rotation2d.kCCW_90deg));
+    controller.y().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.kZero));
+    controller.b().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.kCW_90deg));
+    controller.a().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.k180deg));
+    controller.x().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.kCCW_90deg));
     shooter.register();
   }
 
