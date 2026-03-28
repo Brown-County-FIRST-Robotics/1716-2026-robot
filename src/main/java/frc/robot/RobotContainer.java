@@ -251,7 +251,7 @@ public class RobotContainer extends PeriodicRunnable {
                             drive.getPose().getX(),
                             DriverStation.getAlliance().get() == Alliance.Red
                                 ? 0.6238498687744141
-                                : 8.0692 - 0.6238498687744141,
+                                : 8 - 0.6238498687744141,
                             Rotation2d.kZero)),
                 Set.of(drive)));
     controller
@@ -264,7 +264,7 @@ public class RobotContainer extends PeriodicRunnable {
                         new Pose2d(
                             drive.getPose().getX(),
                             DriverStation.getAlliance().get() == Alliance.Red
-                                ? 8.0692 - 0.6238498687744141
+                                ? 8 - 0.6238498687744141
                                 : 0.6238498687744141,
                             Rotation2d.kZero)),
                 Set.of(drive)));
@@ -302,7 +302,7 @@ public class RobotContainer extends PeriodicRunnable {
     controller
         .rightTrigger(0.7)
         .whileTrue(
-            Commands.run(
+            Commands.runOnce(
                     () -> {
                       shooter.setShooterSpeed(80);
                       shooter.quickServoCommand(1);
