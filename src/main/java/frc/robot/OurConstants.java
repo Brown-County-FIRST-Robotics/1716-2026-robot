@@ -51,4 +51,6 @@ public final class OurConstants {
 
   /** The initial pose of the robot */
   public static final Pose2d INIT_POSE = new Pose2d(0, 0, Rotation2d.fromDegrees(180));
+
+  public static final double AIM_LOOKAHEAD = 0.075;
 }

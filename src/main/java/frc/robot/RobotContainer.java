@@ -12,6 +12,7 @@ import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.util.FileVersionException;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.GenericHID;
@@ -272,7 +273,19 @@ public class RobotContainer extends PeriodicRunnable {
 
     // Track by default
     shooter.setDefaultCommand(
-        Commands.run(() -> shooter.commandTurretToTrack(drive.getPose()), shooter));
+        Commands.run(
+            () ->
+                shooter.commandTurretToTrack(
+                    drive
+                        .getPose()
+                        .plus(
+                            new Transform2d(
+                                0,
+                                0,
+                                Rotation2d.fromRadians(
+                                    drive.getChassisSpeeds().omegaRadiansPerSecond
+                                        * OurConstants.AIM_LOOKAHEAD)))),
+            shooter));
 
     // Switch to X pattern when button is pressed
     controller.leftBumper().onTrue(Commands.runOnce(drive::stopWithX, drive));
