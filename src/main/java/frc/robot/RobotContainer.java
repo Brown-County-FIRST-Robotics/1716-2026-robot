@@ -237,6 +237,9 @@ public class RobotContainer extends PeriodicRunnable {
             () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+            null,
+            null,
+            null,
             opcon.a(),
             controller.rightBumper()));
 
@@ -245,28 +248,48 @@ public class RobotContainer extends PeriodicRunnable {
         .whileTrue(
             Commands.defer(
                 () ->
-                    DriveCommands.driveToPose(
+                    DriveCommands.joystickDrive(
                         drive,
-                        new Pose2d(
-                            drive.getPose().getX(),
-                            DriverStation.getAlliance().get() == Alliance.Red
-                                ? 0.6238498687744141
-                                : 8.0692 - 0.6238498687744141,
-                            Rotation2d.kZero)),
+                        () ->
+                            -controller.getLeftY()
+                                / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+                        () ->
+                            -controller.getLeftX()
+                                / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+                        () ->
+                            -controller.getRightX()
+                                / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+                        null,
+                        DriverStation.getAlliance().get() == Alliance.Red
+                            ? 0.6238498687744141
+                            : 8.0692 - 0.6238498687744141,
+                        Rotation2d.kZero,
+                        opcon.a(),
+                        controller.rightBumper()),
                 Set.of(drive)));
     controller
         .rightStick()
         .whileTrue(
             Commands.defer(
                 () ->
-                    DriveCommands.driveToPose(
+                    DriveCommands.joystickDrive(
                         drive,
-                        new Pose2d(
-                            drive.getPose().getX(),
-                            DriverStation.getAlliance().get() == Alliance.Red
-                                ? 8.0692 - 0.6238498687744141
-                                : 0.6238498687744141,
-                            Rotation2d.kZero)),
+                        () ->
+                            -controller.getLeftY()
+                                / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+                        () ->
+                            -controller.getLeftX()
+                                / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+                        () ->
+                            -controller.getRightX()
+                                / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+                        null,
+                        DriverStation.getAlliance().get() == Alliance.Red
+                            ? 8.0692 - 0.6238498687744141
+                            : 0.6238498687744141,
+                        Rotation2d.kZero,
+                        opcon.a(),
+                        controller.rightBumper()),
                 Set.of(drive)));
 
     opcon.a().whileTrue(Commands.run(() -> shooter.commandTurret(Rotation2d.k180deg)));
