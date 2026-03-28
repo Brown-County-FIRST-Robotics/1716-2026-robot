@@ -30,6 +30,17 @@ public class Shooter extends SubsystemBase {
   private static final double a_offset = 0.4;
   private static final double b_offset = 0.1;
 
+  private static final double SOFT_LIMIT_BUFFER = 0.001;
+
+  double wdmod(double rad) {
+    if (rad < 0) {
+      return wdmod(rad + 2 * Math.PI);
+    } else if (rad > 2 * Math.PI) {
+      return wdmod(rad - 2 * Math.PI);
+    }
+    return rad;
+  }
+
   @Override
   public void periodic() {
     shooterIO.updateInputs(inputs);
@@ -38,7 +49,8 @@ public class Shooter extends SubsystemBase {
     Logger.processInputs("shooter", inputs);
     turret_rotation =
         fuseEncoders(turretInputs.encoder_a_position, turretInputs.encoder_b_position);
-    Logger.recordOutput("turret/rotation", turret_rotation);
+    Logger.recordOutput("turret/absoluteRotation", turret_rotation);
+    turret_rotation = Rotation2d.fromRadians(wdmod(turret_rotation.getRadians()));
   }
 
   public Command fireCommand() {
@@ -48,9 +60,11 @@ public class Shooter extends SubsystemBase {
   public void commandTurret(Rotation2d rotation2d) {
     double position = rotation2d.getRotations();
     if (position < 0) position += 1;
-    Logger.recordOutput("turret/autoAimPosRaw", position);
-    position = Math.min(0.55, Math.max(0.2, position)); // Clamp to hardware limits
-    Logger.recordOutput("turret/autoAimPosClamped", position);
+    position =
+        Math.min(
+            0.221545 - SOFT_LIMIT_BUFFER,
+            Math.max(0.191816 + SOFT_LIMIT_BUFFER, position)); // Clamp to hardware limits
+    Logger.recordOutput("turret/setAbsolutePosition", position);
     turretIO.commandPosition(
         (Rotation2d.fromRotations(position).minus(turret_rotation)).getRotations()
             + turretInputs.position);
