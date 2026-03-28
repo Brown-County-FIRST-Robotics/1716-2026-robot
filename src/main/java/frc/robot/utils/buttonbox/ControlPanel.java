@@ -7,42 +7,57 @@ public class ControlPanel extends ButtonBoxPanel {
     super(bb);
   }
 
-  public Trigger eject(){
+  public Trigger questDown() {
     return new Trigger(() -> getButton(0));
   }
 
-  public Trigger kidModeOn(){
-    return new Trigger(()-> getButton(1));
+  public Trigger kidModeOn() {
+    return new Trigger(() -> getButton(1));
   }
 
-
-  public Trigger autoAimOff(){
+  public Trigger hopperOut() { // extend the hopper
     return new Trigger(() -> getButton(2));
   }
 
-  public Trigger forwardBelt(){
+  public Trigger hopperIn() { // retract the hopper
     return new Trigger(() -> getButton(3));
   }
 
-  public Trigger backwardBelt(){
+  public Trigger intakeForward() { // intake into the robot
     return new Trigger(() -> getButton(4));
   }
 
-  public Trigger climbUp(){//makes the robot climb up the tower
-    return new Trigger(()-> getButton(5));
+  public Trigger intakeReverse() { // spit balls out
+    return new Trigger(() -> getButton(5));
   }
 
-  public Trigger climbDown(){//makes the robot climb down the tower
-    return new Trigger(()-> getButton(6));
+  public Trigger intakeStop() {
+    return new Trigger(() -> getButton(6));
   }
 
-  public Trigger blue(){
-    return new Trigger(()->getButton(7));
+  public Trigger autoAlignTrenchLeft() {
+    return new Trigger(() -> getButton(7));
+  }
+
+  public Trigger autoAlignTrenchRight() {
+    return new Trigger(() -> getButton(8));
+  }
+
+  public Trigger turretAutoAimOn() {
+    return new Trigger(() -> getButton(9));
+  }
+
+  public Trigger hoodSafePosition() {
+    return new Trigger(() -> getButton(10));
+  }
+
+  public Trigger hoodShootPosition() {
+    return new Trigger(() -> getButton(11));
   }
 
   @Override
   int getButtons() {
-    return 10;
+    return 12;
   }
 
   @Override

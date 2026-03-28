@@ -43,14 +43,13 @@ import frc.robot.subsystems.shooter.TurretIOKrakens;
 import frc.robot.subsystems.vision.Quest;
 import frc.robot.subsystems.vision.QuestIOQuest;
 import frc.robot.utils.PeriodicRunnable;
+import frc.robot.utils.buttonbox.ButtonBox;
+import frc.robot.utils.buttonbox.ControlPanel;
 import gg.questnav.questnav.QuestNav;
 import java.io.IOException;
 import java.util.Set;
 import org.json.simple.parser.ParseException;
 import org.littletonrobotics.junction.Logger;
-import frc.robot.utils.buttonbox.ButtonBox;
-import frc.robot.utils.buttonbox.ControlPanel;
-
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -69,9 +68,11 @@ public class RobotContainer extends PeriodicRunnable {
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
   private final CommandXboxController opcon = new CommandXboxController(1);
-
+  private ButtonBox buttonBox = new ButtonBox(2);
+  private ControlPanel controlPanel = new ControlPanel(buttonBox);
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
+  private final LoggedDashboardChooser<Pose2d> initPosChooser;
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -237,7 +238,7 @@ public class RobotContainer extends PeriodicRunnable {
             () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-            opcon.a(),
+            controlPanel.questDown(),
             controller.a()));
 
     controller
@@ -250,7 +251,9 @@ public class RobotContainer extends PeriodicRunnable {
                         new Pose2d(drive.getPose().getX(), 0.6238498687744141, Rotation2d.kZero)),
                 Set.of(drive)));
 
-    opcon.a().whileTrue(Commands.run(() -> shooter.commandTurret(Rotation2d.k180deg)));
+    controlPanel
+        .questDown()
+        .whileTrue(Commands.run(() -> shooter.commandTurret(Rotation2d.k180deg)));
 
     // Track by default
     shooter.setDefaultCommand(
@@ -292,35 +295,24 @@ public class RobotContainer extends PeriodicRunnable {
                       controller.setRumble(RumbleType.kBothRumble, 0);
                     }));
 
-    opcon
-        .povLeft()
-        .onTrue(
-            Commands.runOnce(
-                () ->
-                    shooter.commandTurret(
-                        shooter.getTurretRotation().plus(Rotation2d.fromRotations(0.1)))));
-    opcon
-        .povRight()
-        .onTrue(
-            Commands.runOnce(
-                () ->
-                    shooter.commandTurret(
-                        shooter.getTurretRotation().plus(Rotation2d.fromRotations(-0.1)))));
-
     // Hood positions
     // controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
     // controller.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
-    opcon.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
-    opcon.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
+    controlPanel
+        .hoodSafePosition()
+        .whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
+    controlPanel
+        .hoodShootPosition()
+        .whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
 
     // Intake/hopper control
-    opcon.povUp().whileTrue(intake.extendHopperVelocity());
-    opcon.povDown().whileTrue(intake.retractHopperVelocity());
-    opcon.rightTrigger().onTrue(intake.extendHopper());
-    opcon.leftTrigger().onTrue(intake.retractHopper());
-    opcon.rightBumper().whileTrue(intake.intake());
-    opcon
-        .leftBumper()
+    controlPanel.hopperOut().whileTrue(intake.extendHopperVelocity());
+    controlPanel.hopperIn().whileTrue(intake.retractHopperVelocity());
+    // opcon.rightTrigger().onTrue(intake.extendHopper());
+    // opcon.leftTrigger().onTrue(intake.retractHopper());
+    controlPanel.intakeForward().whileTrue(intake.intake());
+    controlPanel
+        .intakeReverse()
         .whileTrue(
             intake
                 .intakeReverse()
