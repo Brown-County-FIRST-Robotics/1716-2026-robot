@@ -119,7 +119,8 @@ public class Shooter extends SubsystemBase {
     double numOf100Teeth =
         bGearRotations * 13 + bNumOfTeeth; // How many teeth the 100 gear has rotated
     // Fix because the turret is currently rotated by +1 rotation
-    numOf100Teeth = (numOf100Teeth - 100 + 143) % 143;
+    numOf100Teeth = (numOf100Teeth + 200 + 143) % 143;
+    Logger.recordOutput("turret/encoderEstNumOfTeeth", numOf100Teeth);
     double rotationInRadians = numOf100Teeth / 100 * (2 * Math.PI); // convert to radians
     return Rotation2d.fromRadians(rotationInRadians + (Math.PI) - 1.87);
   }
