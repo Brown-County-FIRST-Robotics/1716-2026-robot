@@ -10,6 +10,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import frc.robot.OurConstants;
@@ -22,6 +23,7 @@ public class TurretIOKrakens implements TurretIO {
   StatusSignal<Angle> a_angle;
   StatusSignal<Angle> b_angle;
   StatusSignal<Angle> turretPosition;
+  StatusSignal<AngularVelocity> turretVelocity;
   StatusSignal<Current> turretCurrent;
   StatusSignal<Voltage> turretAppliedOutput;
 
@@ -32,6 +34,7 @@ public class TurretIOKrakens implements TurretIO {
     a_angle = encoderA.getAbsolutePosition();
     b_angle = encoderB.getAbsolutePosition();
     turretPosition = motor.getPosition();
+    turretVelocity = motor.getVelocity();
     turretCurrent = motor.getStatorCurrent();
     turretAppliedOutput = motor.getMotorVoltage();
 
@@ -61,11 +64,20 @@ public class TurretIOKrakens implements TurretIO {
   @Override
   public void updateInputs(TurretIOInputs inputs) {
     BaseStatusSignal.refreshAll(
-        a_angle, b_angle, turretCurrent, turretAppliedOutput, turretPosition);
-    inputs.velocity = inputs.encoder_a_position = a_angle.getValue().in(Units.Rotations) - 0.023;
-    inputs.encoder_b_position = b_angle.getValue().in(Units.Rotations) + 0.363;
-    inputs.current = turretCurrent.getValueAsDouble();
+        a_angle, b_angle, turretCurrent, turretAppliedOutput, turretPosition, turretVelocity);
+
+    inputs.velocity = turretVelocity.getValueAsDouble();
+    inputs.temperature = motor.getDeviceTemp().getValueAsDouble();
     inputs.position = turretPosition.getValue().in(Units.Rotations) * 10.0 / 480.0;
+    inputs.current = turretCurrent.getValueAsDouble();
+    
+    inputs.encoder_b_position = b_angle.getValue().in(Units.Rotations) + 0.363;
+    inputs.encoder_a_position = a_angle.getValue().in(Units.Rotations) - 0.023;
+
+    inputs.motorConnected = motor.isConnected();
+    inputs.encoderAConnected = encoderA.isConnected();
+    inputs.encoderBConnected = encoderB.isConnected();
+
     inputs.appliedVolts = turretAppliedOutput.getValueAsDouble();
   }
 }
