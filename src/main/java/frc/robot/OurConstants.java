@@ -43,7 +43,7 @@ public final class OurConstants {
     public static final int GENERIC_BRUSHED = 20;
   }
 
-  public static final String CAN_NAME = "1716_canivore";
+  public static final String CAN_NAME = "rio";
   public static final CANBus CAN_BUS = new CANBus(CAN_NAME);
   public static final CANBus INTAKE_CAN_BUS = new CANBus("rio");
 
