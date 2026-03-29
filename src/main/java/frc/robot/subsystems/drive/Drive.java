@@ -91,7 +91,8 @@ public class Drive extends SubsystemBase {
 
   public final Quest quest;
 
-  private final GyroIO gyroIO;
+  private final GyroIO questGyro;
+  private final GyroIO fallbackGyro;
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final Module[] modules = new Module[4]; // FL, FR, BL, BR
   private final SysIdRoutine sysId;
@@ -116,7 +117,7 @@ public class Drive extends SubsystemBase {
 
   public Drive(
       Quest quest,
-      GyroIO gyroIO,
+      GyroIO fallbackGyro,
       ModuleIO flModuleIO,
       ModuleIO frModuleIO,
       ModuleIO blModuleIO,
@@ -125,11 +126,20 @@ public class Drive extends SubsystemBase {
     holdingAngle = false;
     targetAngle = Rotation2d.kZero;
     this.quest = quest;
-    this.gyroIO = gyroIO;
+    this.fallbackGyro = fallbackGyro;
     modules[0] = new Module(flModuleIO, 0, TunerConstants.FrontLeft);
     modules[1] = new Module(frModuleIO, 1, TunerConstants.FrontRight);
     modules[2] = new Module(blModuleIO, 2, TunerConstants.BackLeft);
     modules[3] = new Module(brModuleIO, 3, TunerConstants.BackRight);
+
+    this.questGyro =
+        new GyroIO() {
+          @Override
+          public void updateInputs(GyroIOInputs inputs) {
+            inputs.connected = quest.isConnected();
+            inputs.yawPosition = quest.gyroLikeYaw();
+          }
+        };
 
     // Usage reporting for swerve template
     HAL.report(tResourceType.kResourceType_RobotDrive, tInstances.kRobotDriveSwerve_AdvantageKit);
@@ -172,7 +182,7 @@ public class Drive extends SubsystemBase {
   @Override
   public void periodic() {
     odometryLock.lock(); // Prevents odometry updates while reading data
-    gyroIO.updateInputs(gyroInputs);
+    getGyro().updateInputs(gyroInputs);
     Logger.processInputs("Drive/Gyro", gyroInputs);
     for (var module : modules) {
       module.periodic();
@@ -334,6 +344,12 @@ public class Drive extends SubsystemBase {
       output += modules[i].getFFCharacterizationVelocity() / 4.0;
     }
     return output;
+  }
+
+  /** Returns a GyroIO object based on the current quest status */
+  public GyroIO getGyro() {
+    if (quest.isConnected()) return questGyro;
+    return fallbackGyro;
   }
 
   /** Returns the current odometry pose. */
