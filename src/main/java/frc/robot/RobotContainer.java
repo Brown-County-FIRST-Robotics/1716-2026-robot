@@ -355,8 +355,9 @@ public class RobotContainer extends PeriodicRunnable {
                         shooter.getTurretRotation().plus(Rotation2d.fromRotations(-0.1)))));
 
     // Hood positions
-    opcon.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
-    opcon.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
+    opcon.x().whileTrue(Commands.run(() -> shooter.quickServoCommand(0.0), shooter));
+    opcon.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0.05), shooter));
+    opcon.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(0.1), shooter));
 
     // Intake/hopper control
     opcon.povUp().whileTrue(intake.extendHopperVelocity());
