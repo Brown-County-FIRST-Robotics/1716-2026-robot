@@ -12,7 +12,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
 import frc.robot.OurConstants;
-
 import org.littletonrobotics.junction.Logger;
 
 public class Shooter extends SubsystemBase {
@@ -26,7 +25,6 @@ public class Shooter extends SubsystemBase {
   TurretIO turretIO;
   TurretIOInputsAutoLogged turretInputs = new TurretIOInputsAutoLogged();
 
-  
   private final Debouncer shooterConnectedDebouncer =
       new Debouncer(OurConstants.CONNECTED_DEBOUNCE_TIME, Debouncer.DebounceType.kFalling);
   private final Debouncer turretConnectedDebouncer =
@@ -35,10 +33,14 @@ public class Shooter extends SubsystemBase {
       new Debouncer(OurConstants.CONNECTED_DEBOUNCE_TIME, Debouncer.DebounceType.kFalling);
   private final Debouncer encoderBConnectedDebouncer =
       new Debouncer(OurConstants.CONNECTED_DEBOUNCE_TIME, Debouncer.DebounceType.kFalling);
-  private final Alert shooterDisconnectedAlert = new Alert("Shooter motor disconnected", AlertType.kError);
-  private final Alert turretDisconnectedAlert = new Alert("Turret (turn) motor disconnected", AlertType.kError);
-  private final Alert encoderADisconnectedAlert = new Alert("Turret encoder A (11 tooth) disconnected", AlertType.kError);
-  private final Alert encoderBDisconnectedAlert = new Alert("Turret encoder B (13 tooth) disconnected", AlertType.kError);
+  private final Alert shooterDisconnectedAlert =
+      new Alert("Shooter motor disconnected", AlertType.kError);
+  private final Alert turretDisconnectedAlert =
+      new Alert("Turret (turn) motor disconnected", AlertType.kError);
+  private final Alert encoderADisconnectedAlert =
+      new Alert("Turret encoder A (11 tooth) disconnected", AlertType.kError);
+  private final Alert encoderBDisconnectedAlert =
+      new Alert("Turret encoder B (13 tooth) disconnected", AlertType.kError);
 
   public Rotation2d getTurretRotation() {
     return turret_rotation;
@@ -75,8 +77,10 @@ public class Shooter extends SubsystemBase {
     // Handle disconnection alerts
     shooterDisconnectedAlert.set(!shooterConnectedDebouncer.calculate(inputs.connected));
     turretDisconnectedAlert.set(!turretConnectedDebouncer.calculate(turretInputs.motorConnected));
-    encoderADisconnectedAlert.set(!encoderAConnectedDebouncer.calculate(turretInputs.encoderAConnected));
-    encoderBDisconnectedAlert.set(!encoderBConnectedDebouncer.calculate(turretInputs.encoderBConnected));
+    encoderADisconnectedAlert.set(
+        !encoderAConnectedDebouncer.calculate(turretInputs.encoderAConnected));
+    encoderBDisconnectedAlert.set(
+        !encoderBConnectedDebouncer.calculate(turretInputs.encoderBConnected));
   }
 
   public Command fireCommand() {
