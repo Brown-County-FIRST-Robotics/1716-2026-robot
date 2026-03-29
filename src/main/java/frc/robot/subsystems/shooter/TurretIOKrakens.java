@@ -70,7 +70,7 @@ public class TurretIOKrakens implements TurretIO {
     inputs.temperature = motor.getDeviceTemp().getValueAsDouble();
     inputs.position = turretPosition.getValue().in(Units.Rotations) * 10.0 / 480.0;
     inputs.current = turretCurrent.getValueAsDouble();
-    
+
     inputs.encoder_b_position = b_angle.getValue().in(Units.Rotations) + 0.363;
     inputs.encoder_a_position = a_angle.getValue().in(Units.Rotations) - 0.023;
 
