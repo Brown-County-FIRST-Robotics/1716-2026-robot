@@ -1,13 +1,18 @@
 package frc.robot.subsystems.shooter;
 
 import edu.wpi.first.math.Pair;
+import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
+import frc.robot.OurConstants;
+
 import org.littletonrobotics.junction.Logger;
 
 public class Shooter extends SubsystemBase {
@@ -20,6 +25,20 @@ public class Shooter extends SubsystemBase {
   ShooterIO shooterIO;
   TurretIO turretIO;
   TurretIOInputsAutoLogged turretInputs = new TurretIOInputsAutoLogged();
+
+  
+  private final Debouncer shooterConnectedDebouncer =
+      new Debouncer(OurConstants.CONNECTED_DEBOUNCE_TIME, Debouncer.DebounceType.kFalling);
+  private final Debouncer turretConnectedDebouncer =
+      new Debouncer(OurConstants.CONNECTED_DEBOUNCE_TIME, Debouncer.DebounceType.kFalling);
+  private final Debouncer encoderAConnectedDebouncer =
+      new Debouncer(OurConstants.CONNECTED_DEBOUNCE_TIME, Debouncer.DebounceType.kFalling);
+  private final Debouncer encoderBConnectedDebouncer =
+      new Debouncer(OurConstants.CONNECTED_DEBOUNCE_TIME, Debouncer.DebounceType.kFalling);
+  private final Alert shooterDisconnectedAlert = new Alert("Shooter motor disconnected", AlertType.kError);
+  private final Alert turretDisconnectedAlert = new Alert("Turret (turn) motor disconnected", AlertType.kError);
+  private final Alert encoderADisconnectedAlert = new Alert("Turret encoder A (11 tooth) disconnected", AlertType.kError);
+  private final Alert encoderBDisconnectedAlert = new Alert("Turret encoder B (13 tooth) disconnected", AlertType.kError);
 
   public Rotation2d getTurretRotation() {
     return turret_rotation;
@@ -52,6 +71,12 @@ public class Shooter extends SubsystemBase {
         fuseEncoders(turretInputs.encoder_a_position, turretInputs.encoder_b_position);
     Logger.recordOutput("turret/absoluteRotation", turret_rotation);
     turret_rotation = Rotation2d.fromRadians(wdmod(turret_rotation.getRadians()));
+
+    // Handle disconnection alerts
+    shooterDisconnectedAlert.set(!shooterConnectedDebouncer.calculate(inputs.connected));
+    turretDisconnectedAlert.set(!turretConnectedDebouncer.calculate(turretInputs.motorConnected));
+    encoderADisconnectedAlert.set(!encoderAConnectedDebouncer.calculate(turretInputs.encoderAConnected));
+    encoderBDisconnectedAlert.set(!encoderBConnectedDebouncer.calculate(turretInputs.encoderBConnected));
   }
 
   public Command fireCommand() {
