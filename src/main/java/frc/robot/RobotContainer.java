@@ -374,10 +374,38 @@ public class RobotContainer extends PeriodicRunnable {
                         () -> rollers.setSpeeds(-20, 0), () -> rollers.setSpeeds(0, 0))));
 
     // Rotation snapping
-    controller.y().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.kZero));
-    controller.b().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.kCW_90deg));
-    controller.a().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.k180deg));
-    controller.x().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.kCCW_90deg));
+    controller
+        .y()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  drive.targetAngle = Rotation2d.kZero;
+                  drive.holdingAngle = true;
+                }));
+    controller
+        .b()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  drive.targetAngle = Rotation2d.kCW_90deg;
+                  drive.holdingAngle = true;
+                }));
+    controller
+        .a()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  drive.targetAngle = Rotation2d.k180deg;
+                  drive.holdingAngle = true;
+                }));
+    controller
+        .x()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  drive.targetAngle = Rotation2d.kCCW_90deg;
+                  drive.holdingAngle = true;
+                }));
 
     shooter.register();
   }

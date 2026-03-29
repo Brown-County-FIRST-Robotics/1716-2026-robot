@@ -45,7 +45,7 @@ class AngleHoldState {
 public class DriveCommands {
   private static final double DEADBAND = 0.1;
   private static final double MIN_HOLD_VELOCITY = 0.1;
-  private static final double MIN_HOLD_ROTATION = 2 * Math.PI * 0.1;
+  private static final double MIN_HOLD_ROTATION = 2 * Math.PI * 0.2;
   private static final double DISTANCE_KP = 4.25;
   private static final double DISTANCE_KD = 0.15;
   private static final double ANGLE_KP = 8.0;
@@ -59,7 +59,7 @@ public class DriveCommands {
 
   private static final double LOOKAHEAD_X = 0.05;
   private static final double LOOKAHEAD_Y = 0.05;
-  private static final double LOOKAHEAD_Z = 0.05;
+  private static final double LOOKAHEAD_Z = 0.1;
 
   private DriveCommands() {}
 
@@ -114,6 +114,8 @@ public class DriveCommands {
             DISTANCE_KD,
             new TrapezoidProfile.Constraints(
                 drive.getMaxLinearSpeedMetersPerSec(), drive.getMaxLinearSpeedMetersPerSec()));
+    angleController.setTolerance(2 * Math.PI * 0.01);
+
     distanceControllerX.setTolerance(0.02);
     distanceControllerY.setTolerance(0.02);
 
@@ -168,9 +170,10 @@ public class DriveCommands {
                     angleController.reset(
                         self.getRotation().getRadians(), currentSpeeds.omegaRadiansPerSecond);
                   }
-                  targetSpeeds.omegaRadiansPerSecond =
+                  double pidO =
                       angleController.calculate(
                           self.getRotation().getRadians(), drive.targetAngle.getRadians());
+                  targetSpeeds.omegaRadiansPerSecond = angleController.atGoal() ? 0 : pidO;
                 } else {
                   drive.holdingAngle = false;
                 }
