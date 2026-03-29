@@ -245,8 +245,8 @@ public class RobotContainer extends PeriodicRunnable {
                         new Pose2d(
                             drive.getPose().getX(),
                             DriverStation.getAlliance().get() == Alliance.Red
-                                ? 0.6238498687744141
-                                : 8 - 0.6238498687744141,
+                                ? (0.639445 - 0.0254)
+                                : 8.069275 - (0.639445 - 0.0254),
                             Rotation2d.kZero)),
                 Set.of(drive)));
     controller
@@ -259,8 +259,8 @@ public class RobotContainer extends PeriodicRunnable {
                         new Pose2d(
                             drive.getPose().getX(),
                             DriverStation.getAlliance().get() == Alliance.Red
-                                ? 8 - 0.6238498687744141
-                                : 0.6238498687744141,
+                                ? 8.069275 - (0.639445 - 0.0254)
+                                : (0.639445 - 0.0254),
                             Rotation2d.kZero)),
                 Set.of(drive)));
 
