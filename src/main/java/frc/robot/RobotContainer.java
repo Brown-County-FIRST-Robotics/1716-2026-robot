@@ -33,15 +33,11 @@ import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.IntakeIO;
-import frc.robot.subsystems.intake.IntakeIOKraken;
 import frc.robot.subsystems.rollers.Rollers;
 import frc.robot.subsystems.rollers.RollersIO;
-import frc.robot.subsystems.rollers.RollersIOKraken;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterIO;
-import frc.robot.subsystems.shooter.ShooterIOKrakens;
 import frc.robot.subsystems.shooter.TurretIO;
-import frc.robot.subsystems.shooter.TurretIOKrakens;
 import frc.robot.subsystems.vision.Quest;
 import frc.robot.subsystems.vision.QuestIOQuest;
 import frc.robot.utils.PeriodicRunnable;
@@ -97,10 +93,9 @@ public class RobotContainer extends PeriodicRunnable {
                 new ModuleIOTalonFX(TunerConstants.FrontRight),
                 new ModuleIOTalonFX(TunerConstants.BackLeft),
                 new ModuleIOTalonFX(TunerConstants.BackRight));
-        shooter = new Shooter(new ShooterIOKrakens(62, 9), new TurretIOKrakens(36, 35, 22));
-        rollers = new Rollers(new RollersIOKraken(43, 37));
-        intake = new Intake(new IntakeIOKraken(40, 38));
-
+        shooter = new Shooter(new ShooterIO() {}, new TurretIO() {});
+        intake = new Intake(new IntakeIO() {});
+        rollers = new Rollers(new RollersIO() {});
         // The ModuleIOTalonFXS implementation provides an example implementation for
         // TalonFXS controller connected to a CANdi with a PWM encoder. The
         // implementations
@@ -237,7 +232,7 @@ public class RobotContainer extends PeriodicRunnable {
             () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-            opcon.a(),
+            () -> true,
             controller.rightBumper()));
 
     controller
