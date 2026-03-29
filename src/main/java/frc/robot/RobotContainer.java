@@ -230,38 +230,55 @@ public class RobotContainer extends PeriodicRunnable {
         DriveCommands.joystickDrive(
             drive,
             () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+            false,
             () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+            false,
             () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+            false,
             opcon.a(),
-            controller.rightBumper()));
+            () -> false));
 
     controller
-        .leftStick()
+        .leftBumper()
         .whileTrue(
             Commands.defer(
                 () ->
-                    DriveCommands.driveToPose(
+                    DriveCommands.joystickDrive(
                         drive,
-                        new Pose2d(
-                            drive.getPose().getX(),
+                        () ->
+                            -controller.getLeftY()
+                                / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+                        false,
+                        () ->
                             DriverStation.getAlliance().get() == Alliance.Red
                                 ? (0.639445 - 0.0254)
                                 : 8.069275 - (0.639445 - 0.0254),
-                            Rotation2d.kZero)),
+                        true,
+                        () -> 0,
+                        true,
+                        opcon.a(),
+                        () -> false),
                 Set.of(drive)));
     controller
-        .rightStick()
+        .rightBumper()
         .whileTrue(
             Commands.defer(
                 () ->
-                    DriveCommands.driveToPose(
+                    DriveCommands.joystickDrive(
                         drive,
-                        new Pose2d(
-                            drive.getPose().getX(),
+                        () ->
+                            -controller.getLeftY()
+                                / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+                        false,
+                        () ->
                             DriverStation.getAlliance().get() == Alliance.Red
                                 ? 8.069275 - (0.639445 - 0.0254)
                                 : (0.639445 - 0.0254),
-                            Rotation2d.kZero)),
+                        true,
+                        () -> 0,
+                        true,
+                        opcon.a(),
+                        () -> false),
                 Set.of(drive)));
 
     opcon.a().whileTrue(Commands.run(() -> shooter.commandTurret(Rotation2d.k180deg)));
@@ -283,7 +300,7 @@ public class RobotContainer extends PeriodicRunnable {
             shooter));
 
     // Switch to X pattern when button is pressed
-    controller.leftBumper().onTrue(Commands.runOnce(drive::stopWithX, drive));
+    // controller.leftBumper().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
     // Reset initial pos on auto init
     RobotModeTriggers.autonomous()
