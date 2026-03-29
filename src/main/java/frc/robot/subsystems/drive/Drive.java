@@ -35,6 +35,8 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
@@ -80,6 +82,13 @@ public class Drive extends SubsystemBase {
 
   static final Lock odometryLock = new ReentrantLock();
 
+  public boolean holdingAngle;
+  public Rotation2d targetAngle;
+  public boolean holdingX;
+  public boolean holdingY;
+  public double targetX;
+  public double targetY;
+
   public final Quest quest;
 
   private final GyroIO gyroIO;
@@ -87,7 +96,7 @@ public class Drive extends SubsystemBase {
   private final Module[] modules = new Module[4]; // FL, FR, BL, BR
   private final SysIdRoutine sysId;
   private final Alert gyroDisconnectedAlert =
-      new Alert("Disconnected gyro, using kinematics as fallback.", AlertType.kError);
+      new Alert("Disconnected Quest/gyro, using kinematics as fallback.", AlertType.kError);
 
   private SwerveDriveKinematics kinematics = new SwerveDriveKinematics(getModuleTranslations());
   private Rotation2d rawGyroRotation = Rotation2d.kZero;
@@ -102,6 +111,9 @@ public class Drive extends SubsystemBase {
       new SwerveDrivePoseEstimator(
           kinematics, rawGyroRotation, lastModulePositions, FieldConstants.ip());
 
+  // Full field for Elastic
+  private Field2d field;
+
   public Drive(
       Quest quest,
       GyroIO gyroIO,
@@ -109,6 +121,9 @@ public class Drive extends SubsystemBase {
       ModuleIO frModuleIO,
       ModuleIO blModuleIO,
       ModuleIO brModuleIO) {
+    field = new Field2d();
+    holdingAngle = false;
+    targetAngle = Rotation2d.kZero;
     this.quest = quest;
     this.gyroIO = gyroIO;
     modules[0] = new Module(flModuleIO, 0, TunerConstants.FrontLeft);
@@ -124,7 +139,7 @@ public class Drive extends SubsystemBase {
 
     // Configure AutoBuilder for PathPlanner
     AutoBuilder.configure(
-        this.quest::getPose,
+        this::getPose,
         this::setPose,
         this::getChassisSpeeds,
         this::runVelocity,
@@ -211,6 +226,10 @@ public class Drive extends SubsystemBase {
 
     // Update gyro alert
     gyroDisconnectedAlert.set(!gyroInputs.connected && Constants.currentMode != Mode.SIM);
+
+    // 2d field updates
+    field.setRobotPose(getPose());
+    SmartDashboard.putData("Field", field);
   }
 
   /**
@@ -329,9 +348,24 @@ public class Drive extends SubsystemBase {
     return getPose().getRotation();
   }
 
+  public Translation2d getTranslation() {
+    return getPose().getTranslation();
+  }
+
   /** Resets the current odometry pose. */
   public void setPose(Pose2d pose) {
     poseEstimator.resetPosition(rawGyroRotation, getModulePositions(), pose);
+    if (quest.isConnected()) quest.setPose(pose);
+  }
+
+  /** Resets the current holding angle of the robot */
+  public void resetHold() {
+    holdingAngle = false;
+    targetAngle = getRotation();
+    holdingX = false;
+    holdingY = false;
+    targetX = getTranslation().getX();
+    targetY = getTranslation().getY();
   }
 
   /** Adds a new timestamped vision measurement. */

@@ -45,9 +45,12 @@ public final class OurConstants {
 
   public static final String CAN_NAME = "1716_canivore";
   public static final CANBus CAN_BUS = new CANBus(CAN_NAME);
+  public static final CANBus INTAKE_CAN_BUS = new CANBus("rio");
 
   public static final double CONNECTED_DEBOUNCE_TIME = 0.5;
 
   /** The initial pose of the robot */
   public static final Pose2d INIT_POSE = new Pose2d(0, 0, Rotation2d.fromDegrees(180));
+
+  public static final double AIM_LOOKAHEAD = 0.075;
 }

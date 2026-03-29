@@ -3,12 +3,13 @@ package frc.robot.subsystems.shooter;
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Subsystem;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
 import org.littletonrobotics.junction.Logger;
 
-public class Shooter implements Subsystem {
+public class Shooter extends SubsystemBase {
   double abs_rel_turret_offset = 0.0;
   Rotation2d hoodAngle = Rotation2d.kZero;
   private static final double hoodLegLength1 = 4.87;
@@ -18,11 +19,27 @@ public class Shooter implements Subsystem {
   ShooterIO shooterIO;
   TurretIO turretIO;
   TurretIOInputsAutoLogged turretInputs = new TurretIOInputsAutoLogged();
+
+  public Rotation2d getTurretRotation() {
+    return turret_rotation;
+  }
+
   Rotation2d turret_rotation = new Rotation2d();
   private static final double a_gear_ratio = 11.0 / 100.0;
   private static final double b_gear_ratio = 13.0 / 100.0;
   private static final double a_offset = 0.4;
   private static final double b_offset = 0.1;
+
+  private static final double SOFT_LIMIT_BUFFER = 0.001;
+
+  double wdmod(double rad) {
+    if (rad < 0) {
+      return wdmod(rad + 2 * Math.PI);
+    } else if (rad > 2 * Math.PI) {
+      return wdmod(rad - 2 * Math.PI);
+    }
+    return rad;
+  }
 
   @Override
   public void periodic() {
@@ -30,15 +47,40 @@ public class Shooter implements Subsystem {
     turretIO.updateInputs(turretInputs);
     Logger.processInputs("turret", turretInputs);
     Logger.processInputs("shooter", inputs);
-    hoodAngle = fuseEncoders();
+    turret_rotation =
+        fuseEncoders(turretInputs.encoder_a_position, turretInputs.encoder_b_position);
+    Logger.recordOutput("turret/absoluteRotation", turret_rotation);
+    turret_rotation = Rotation2d.fromRadians(wdmod(turret_rotation.getRadians()));
   }
 
   public Command fireCommand() {
     return null;
   }
 
-  private void commandTurret(Rotation2d rotation2d) {
-    rotation2d.getRotations();
+  public void commandTurret(Rotation2d rotation2d) {
+    double position = rotation2d.getRotations();
+    if (position < 0) position += 1;
+    position =
+        Math.min(
+            0.221545 - SOFT_LIMIT_BUFFER,
+            Math.max(0.191816 + SOFT_LIMIT_BUFFER, position)); // Clamp to hardware limits
+    Logger.recordOutput("turret/setAbsolutePosition", position);
+    turretIO.commandPosition(
+        (Rotation2d.fromRotations(position).minus(turret_rotation)).getRotations()
+            + turretInputs.position);
+  }
+
+  public Rotation2d getRotationToHub(Pose2d robot) {
+    var hubPosition = FieldConstants.hub();
+    return hubPosition
+        .toTranslation2d()
+        .minus(robot.plus(new Transform2d(-0.2, 0.3, Rotation2d.kZero)).getTranslation())
+        .getAngle();
+  }
+
+  public void commandTurretToTrack(Pose2d p2) {
+    var correctRotation = getRotationToHub(p2).minus(p2.getRotation());
+    commandTurret(correctRotation);
   }
 
   // Turret, shooter
@@ -63,8 +105,23 @@ public class Shooter implements Subsystem {
         Rotation2d.fromRadians(theta));
   }
 
-  private Rotation2d fuseEncoders() {
-    return Rotation2d.k180deg;
+  private Rotation2d fuseEncoders(double aPosition, double bPosition) {
+    // A and B are read from encoder, should be somewhere from 0-1
+    // A might need to be from smaller tooth gear
+    double aNumOfTeeth =
+        aPosition * 11; // turn encoder position to the amount of teeth the gear has rotated
+    double bNumOfTeeth = bPosition * 13;
+    long garbageDifference =
+        (Math.round(aNumOfTeeth - bNumOfTeeth + 22) % 11); // Adding 22 to force positive after mod
+    long bGearRotations =
+        (garbageDifference + 11 * (garbageDifference % 2))
+            / 2; // Amount of times the 13 tooth gear has made a full rotation
+    double numOf100Teeth =
+        bGearRotations * 13 + bNumOfTeeth; // How many teeth the 100 gear has rotated
+    // Fix because the turret is currently rotated by +1 rotation
+    numOf100Teeth = (numOf100Teeth - 100 + 143) % 143;
+    double rotationInRadians = numOf100Teeth / 100 * (2 * Math.PI); // convert to radians
+    return Rotation2d.fromRadians(rotationInRadians + (Math.PI) - 1.87);
   }
 
   // both of the next functions together are just the law of cosines, bc it is a literal triangle
@@ -97,7 +154,8 @@ public class Shooter implements Subsystem {
     shooterIO.commandHoodPosition(increment);
   }
 
-  public Shooter(ShooterIO io) {
+  public Shooter(ShooterIO io, TurretIO tio) {
     this.shooterIO = io;
+    this.turretIO = tio;
   }
 }

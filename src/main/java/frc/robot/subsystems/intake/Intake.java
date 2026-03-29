@@ -18,6 +18,7 @@ public class Intake extends SubsystemBase {
       new Debouncer(OurConstants.CONNECTED_DEBOUNCE_TIME, Debouncer.DebounceType.kFalling);
   private final Alert intakeDisconnectedAlert;
   private final Alert extendDisconnectedAlert;
+  double extendedZeroPosition;
 
   public Intake(IntakeIO io) {
     this.io = io;
@@ -38,36 +39,61 @@ public class Intake extends SubsystemBase {
             Alert.AlertType.kError);
   }
 
+  public double getRealExtenderPosition() {
+    return inputs.extendPosition - extendedZeroPosition;
+  }
+
+  public void setZeroPosition() {
+    extendedZeroPosition = inputs.extendPosition;
+  }
+
   public void setSpeeds(double intake_velocity, double extend_velocity) {
     io.intakeSpeed(intake_velocity);
     io.extendSpeed(extend_velocity);
   }
 
   public Command intake() {
-    return Commands.run(() -> io.intakeSpeed(150), this);
+    return Commands.runEnd(() -> io.intakeSpeed(60), () -> io.intakeSpeed(0), this);
+  }
+
+  public Command intakeReverse() {
+    return Commands.runEnd(() -> io.intakeSpeed(-40), () -> io.intakeSpeed(0), this);
   }
 
   public Command intakeStop() {
     return Commands.run(() -> io.intakeSpeed(0), this);
   }
 
-  public Command intakeReverse() {
-    return Commands.run(() -> io.intakeSpeed(-100), this);
-  }
-
   public Command extendHopper() {
-    return Commands.run(() -> io.extendSpeed(20), this);
+    return Commands.run(() -> io.extenderPosition(extendedZeroPosition + 13.45), this);
   }
 
   public Command retractHopper() {
-    return Commands.run(() -> io.extendSpeed(-20), this);
+    return Commands.run(() -> io.extenderPosition(extendedZeroPosition), this);
+  }
+
+  public Command extendHopperVelocity() {
+    return Commands.runEnd(() -> io.extenderVelocity(4), () -> io.extenderVelocity(0), this);
+  }
+
+  public Command retractHopperVelocity() {
+    return Commands.runEnd(() -> io.extenderVelocity(-5), () -> io.extenderVelocity(0), this);
+  }
+
+  public Command retractStop() {
+    return Commands.run(() -> io.extenderVelocity(0), this);
+  }
+
+  public boolean isExtenderConnected() {
+    return inputs.extendConnected;
   }
 
   @Override
   public void periodic() {
     io.updateInputs(inputs);
     Logger.processInputs("intake", inputs);
-    intakeDisconnectedAlert.set(intakeConnectedDebouncer.calculate(inputs.intakeConnected));
-    extendDisconnectedAlert.set(extendConnectedDebouncer.calculate(inputs.extendConnected));
+    Logger.recordOutput("intake/distanceToZero", getRealExtenderPosition());
+    intakeDisconnectedAlert.set(!intakeConnectedDebouncer.calculate(inputs.intakeConnected));
+    extendDisconnectedAlert.set(!extendConnectedDebouncer.calculate(inputs.extendConnected));
   }
 }

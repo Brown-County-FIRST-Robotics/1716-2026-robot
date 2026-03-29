@@ -34,6 +34,10 @@ public class Quest extends PeriodicRunnable {
     return realPose.toPose2d();
   }
 
+  public void setPose(Pose2d pose) {
+    realPose = new Pose3d(pose);
+  }
+
   @Override
   public void periodic() {
     io.updateInputs(inputs);
