@@ -4,6 +4,7 @@ import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
@@ -70,16 +71,25 @@ public class Shooter extends SubsystemBase {
             + turretInputs.position);
   }
 
-  public Rotation2d getRotationToHub(Pose2d robot) {
-    var hubPosition = FieldConstants.hub();
-    return hubPosition
-        .toTranslation2d()
+  public Rotation2d getTurretTarget(Pose2d robot) {
+    double distanceToCenter =
+        Math.abs(8.270494 - robot.getX()); // Distance taken on the X axis (the long way)
+    double distanceToMidline =
+        4.034536
+            - robot.getY(); // Distance taken on the Y axis (the short way), positive means human
+    // player side
+
+    Translation2d targetPosition;
+    if (distanceToCenter > 3.6449) targetPosition = FieldConstants.hub().toTranslation2d();
+    else if (distanceToMidline > 0) targetPosition = new Translation2d(2, 1.5);
+    else targetPosition = new Translation2d(2, 8.069275 - 1.5);
+    return targetPosition
         .minus(robot.plus(new Transform2d(-0.2, 0.3, Rotation2d.kZero)).getTranslation())
         .getAngle();
   }
 
   public void commandTurretToTrack(Pose2d p2) {
-    var correctRotation = getRotationToHub(p2).minus(p2.getRotation());
+    var correctRotation = getTurretTarget(p2).minus(p2.getRotation());
     commandTurret(correctRotation);
   }
 
