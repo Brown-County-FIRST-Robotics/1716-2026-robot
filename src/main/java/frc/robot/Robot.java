@@ -34,7 +34,7 @@ public class Robot extends LoggedRobot {
   private RobotContainer robotContainer;
 
   public Robot() {
-    Logger.recordMetadata("ProjectName", "2025");
+    Logger.recordMetadata("ProjectName", "2026_spare");
     File deployDir = Filesystem.getDeployDirectory();
     File tagFile = new File(deployDir, "git_tag.txt");
     File deployerFile = new File(deployDir, "deployer.txt");
