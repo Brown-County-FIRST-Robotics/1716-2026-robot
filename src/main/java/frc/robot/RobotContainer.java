@@ -321,8 +321,7 @@ public class RobotContainer extends PeriodicRunnable {
                     () -> {
                       shooter.setShooterSpeed(80);
                       shooter.quickServoCommand(1);
-                    },
-                    shooter)
+                    })
                 .alongWith(
                     Commands.waitSeconds(0.4)
                         .andThen(Commands.run(() -> rollers.setSpeeds(20, 20), rollers)))
