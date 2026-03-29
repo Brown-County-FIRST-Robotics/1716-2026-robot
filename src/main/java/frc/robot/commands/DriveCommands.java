@@ -82,8 +82,11 @@ public class DriveCommands {
   public static Command joystickDrive(
       Drive drive,
       DoubleSupplier xSupplier,
+      boolean useAsSetPosX,
       DoubleSupplier ySupplier,
+      boolean useAsSetPosY,
       DoubleSupplier omegaSupplier,
+      boolean useAsSetAngle,
       BooleanSupplier robotRelativeSupplier,
       BooleanSupplier snapToMajorAxis) {
     ProfiledPIDController angleController =
@@ -109,8 +112,8 @@ public class DriveCommands {
             DISTANCE_KD,
             new TrapezoidProfile.Constraints(
                 drive.getMaxLinearSpeedMetersPerSec(), drive.getMaxLinearSpeedMetersPerSec()));
-    distanceControllerX.setTolerance(0.02);
-    distanceControllerY.setTolerance(0.02);
+    distanceControllerX.setTolerance(0.01);
+    distanceControllerY.setTolerance(0.01);
 
     return Commands.run(
             () -> {
@@ -124,79 +127,95 @@ public class DriveCommands {
 
               double omega = omegaSupplier.getAsDouble();
 
+              // First assume all speeds are velocity targets from joysticks, if they are not then
+              // the PID controllers will directly modify the set speeds through targetSpeeds
+
+              boolean isFlipped =
+                  DriverStation.getAlliance().isPresent()
+                      && DriverStation.getAlliance().get() == Alliance.Red;
+              ChassisSpeeds targetSpeeds =
+                  new ChassisSpeeds(
+                      Math.copySign(x * x, x) * drive.getMaxLinearSpeedMetersPerSec(),
+                      Math.copySign(y * y, y) * drive.getMaxLinearSpeedMetersPerSec(),
+                      Math.copySign(omega * omega, omega) * drive.getMaxAngularSpeedRadPerSec());
+
+              Pose2d self = drive.getPose();
+
               ChassisSpeeds currentSpeeds =
                   ChassisSpeeds.fromRobotRelativeSpeeds(
                       drive.getChassisSpeeds(), drive.getRotation());
 
               // ############ ROTATION AND TRANSLATION HOLDING ############
-              if (Math.abs(omega) < DEADBAND) {
-                if (!drive.holdingAngle) {
-                  drive.holdingAngle = true;
-                  drive.targetAngle =
-                      drive
-                          .getRotation()
-                          .plus(
-                              Rotation2d.fromRadians(
-                                  currentSpeeds.omegaRadiansPerSecond * LOOKAHEAD_Z));
-                  angleController.reset(drive.targetAngle.getRadians());
-                  omega = 0;
-                } else
-                  omega =
+              if (!robotRelativeSupplier.getAsBoolean()) {
+                if (Math.abs(omega) < DEADBAND || useAsSetAngle) {
+                  if (!drive.holdingAngle) {
+                    drive.holdingAngle = true;
+                    drive.targetAngle =
+                        useAsSetAngle
+                            ? Rotation2d.fromRadians(omegaSupplier.getAsDouble())
+                            : drive
+                                .getRotation()
+                                .plus(
+                                    Rotation2d.fromRadians(
+                                        currentSpeeds.omegaRadiansPerSecond * LOOKAHEAD_Z));
+                    angleController.reset(self.getRotation().getRadians());
+                  }
+                  targetSpeeds.omegaRadiansPerSecond =
                       angleController.calculate(
-                          drive.getRotation().getRadians(), drive.targetAngle.getRadians());
-              } else {
-                drive.holdingAngle = false;
-                omega = Math.copySign(omega * omega, omega) * drive.getMaxAngularSpeedRadPerSec();
-              }
+                          self.getRotation().getRadians(), drive.targetAngle.getRadians());
+                } else {
+                  drive.holdingAngle = false;
+                }
 
-              if (Math.abs(x) < DEADBAND) {
-                if (!drive.holdingX) {
-                  drive.holdingX = true;
-                  drive.targetX =
-                      drive.getTranslation().getX() + currentSpeeds.vxMetersPerSecond * LOOKAHEAD_X;
-                  distanceControllerX.reset(drive.targetX);
-                  x = 0;
-                } else if (!distanceControllerX.atGoal())
-                  x = distanceControllerX.calculate(drive.getTranslation().getX(), drive.targetX);
-                else x = 0;
-              } else {
-                drive.holdingX = false;
-                x = Math.copySign(x * x, x) * drive.getMaxLinearSpeedMetersPerSec();
-              }
-              if (Math.abs(y) < DEADBAND) {
-                if (!drive.holdingY) {
-                  drive.holdingY = true;
-                  drive.targetY =
-                      drive.getTranslation().getY() + currentSpeeds.vyMetersPerSecond * LOOKAHEAD_Y;
-                  distanceControllerY.reset(drive.targetY);
-                  y = 0;
-                } else if (!distanceControllerY.atGoal())
-                  y = distanceControllerY.calculate(drive.getTranslation().getY(), drive.targetY);
-                else y = 0;
-              } else {
-                drive.holdingY = false;
-                y = Math.copySign(y * y, y) * drive.getMaxLinearSpeedMetersPerSec();
-              }
+                if (Math.abs(x) < DEADBAND || useAsSetPosX) {
+                  if (!drive.holdingX) {
+                    drive.holdingX = true;
+                    drive.targetX =
+                        useAsSetPosX
+                            ? xSupplier.getAsDouble()
+                            : self.getX() + currentSpeeds.vxMetersPerSecond * LOOKAHEAD_X;
+                    distanceControllerX.reset(self.getX());
+                  }
+                  targetSpeeds.vxMetersPerSecond =
+                      distanceControllerX.atGoal()
+                          ? 0
+                          : distanceControllerX.calculate(self.getX(), drive.targetX);
+                } else {
+                  drive.holdingX = false;
+                }
+                if (Math.abs(y) < DEADBAND || useAsSetPosY) {
+                  if (!drive.holdingY) {
+                    drive.holdingY = true;
+                    drive.targetY =
+                        useAsSetPosY
+                            ? ySupplier.getAsDouble()
+                            : self.getY() + currentSpeeds.vyMetersPerSecond * LOOKAHEAD_Y;
+                    distanceControllerY.reset(self.getY());
+                  }
+                  targetSpeeds.vyMetersPerSecond =
+                      distanceControllerY.atGoal()
+                          ? 0
+                          : distanceControllerY.calculate(self.getY(), drive.targetY);
+                } else {
+                  drive.holdingY = false;
+                }
 
-              // Convert to field relative speeds & send command
-              ChassisSpeeds speeds = new ChassisSpeeds(x, y, omega);
-              boolean isFlipped =
-                  DriverStation.getAlliance().isPresent()
-                      && DriverStation.getAlliance().get() == Alliance.Red;
-
-              if (robotRelativeSupplier.getAsBoolean()) drive.runVelocity(speeds);
-              else
-                drive.runVelocity(
+                targetSpeeds =
                     ChassisSpeeds.fromFieldRelativeSpeeds(
-                        speeds,
+                        targetSpeeds,
                         isFlipped
                             ? drive.getPose().getRotation().plus(new Rotation2d(Math.PI))
-                            : drive.getPose().getRotation()));
+                            : drive.getPose().getRotation());
+              }
+              drive.runVelocity(targetSpeeds);
             },
             drive)
         .beforeStarting(
             () -> {
               angleController.reset(drive.getRotation().getRadians());
+              distanceControllerX.reset(drive.getPose().getX());
+              distanceControllerY.reset(drive.getPose().getY());
+
               drive.resetHold();
             });
   }
