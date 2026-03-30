@@ -51,6 +51,11 @@ import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class Drive extends SubsystemBase {
+  public enum HoldMode {
+    HOLD,
+    OFF
+  }
+
   // TunerConstants doesn't include these constants, so they are declared locally
   static final double ODOMETRY_FREQUENCY = TunerConstants.kCANBus.isNetworkFD() ? 250.0 : 100.0;
   public static final double DRIVE_BASE_RADIUS =
@@ -82,10 +87,10 @@ public class Drive extends SubsystemBase {
 
   static final Lock odometryLock = new ReentrantLock();
 
-  public boolean holdingAngle;
-  public Rotation2d targetAngle;
+  public HoldMode holdingAngle;
   public boolean holdingX;
   public boolean holdingY;
+  public Rotation2d targetAngle;
   public double targetX;
   public double targetY;
 
@@ -122,8 +127,6 @@ public class Drive extends SubsystemBase {
       ModuleIO blModuleIO,
       ModuleIO brModuleIO) {
     field = new Field2d();
-    holdingAngle = false;
-    targetAngle = Rotation2d.kZero;
     this.quest = quest;
     this.gyroIO = gyroIO;
     modules[0] = new Module(flModuleIO, 0, TunerConstants.FrontLeft);
@@ -230,6 +233,13 @@ public class Drive extends SubsystemBase {
     // 2d field updates
     field.setRobotPose(getPose());
     SmartDashboard.putData("Field", field);
+
+    Logger.recordOutput("drive/holdingAngle", holdingAngle);
+    Logger.recordOutput("drive/holdingX", holdingX);
+    Logger.recordOutput("drive/holdingY", holdingY);
+    Logger.recordOutput("drive/targetAngle", targetAngle);
+    Logger.recordOutput("drive/targetX", targetX);
+    Logger.recordOutput("drive/targetY", targetY);
   }
 
   /**
@@ -360,7 +370,7 @@ public class Drive extends SubsystemBase {
 
   /** Resets the current holding angle of the robot */
   public void resetHold() {
-    holdingAngle = false;
+    holdingAngle = HoldMode.OFF;
     targetAngle = getRotation();
     holdingX = false;
     holdingY = false;

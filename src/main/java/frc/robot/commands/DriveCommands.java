@@ -23,6 +23,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.drive.Drive.HoldMode;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.LinkedList;
@@ -152,27 +153,28 @@ public class DriveCommands {
 
               // ############ ROTATION AND TRANSLATION HOLDING ############
               if (!robotRelativeSupplier.getAsBoolean()) {
-                if ((Math.abs(omega) < DEADBAND
-                        && currentSpeeds.omegaRadiansPerSecond < MIN_HOLD_ROTATION)
-                    || useAsSetAngle) {
-                  if (!drive.holdingAngle) {
-                    drive.holdingAngle = true;
-                    drive.targetAngle =
-                        useAsSetAngle
-                            ? Rotation2d.fromRadians(omegaSupplier.getAsDouble())
-                            : drive
-                                .getRotation()
-                                .plus(
-                                    Rotation2d.fromRadians(
-                                        currentSpeeds.omegaRadiansPerSecond * LOOKAHEAD_Z));
-                    angleController.reset(
-                        self.getRotation().getRadians(), currentSpeeds.omegaRadiansPerSecond);
-                  }
+                if (Math.abs(omega) > DEADBAND) {
+                  drive.holdingAngle = HoldMode.OFF;
+                } else if (drive.holdingAngle == HoldMode.OFF
+                    && currentSpeeds.omegaRadiansPerSecond < MIN_HOLD_ROTATION) {
+                  double lookaheadScalar = currentSpeeds.omegaRadiansPerSecond / MIN_HOLD_ROTATION;
+
+                  drive.holdingAngle = HoldMode.HOLD;
+                  drive.targetAngle =
+                      useAsSetAngle
+                          ? Rotation2d.fromRadians(omegaSupplier.getAsDouble())
+                          : drive
+                              .getRotation()
+                              .plus(
+                                  Rotation2d.fromRadians(
+                                      currentSpeeds.omegaRadiansPerSecond
+                                          * LOOKAHEAD_Z
+                                          * lookaheadScalar));
+                }
+                if (drive.holdingAngle != HoldMode.OFF) {
                   targetSpeeds.omegaRadiansPerSecond =
                       angleController.calculate(
                           self.getRotation().getRadians(), drive.targetAngle.getRadians());
-                } else {
-                  drive.holdingAngle = false;
                 }
 
                 if ((Math.abs(x) < DEADBAND && currentSpeeds.vxMetersPerSecond < MIN_HOLD_VELOCITY)
