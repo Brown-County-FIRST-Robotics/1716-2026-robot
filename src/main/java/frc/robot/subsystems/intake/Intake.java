@@ -24,18 +24,11 @@ public class Intake extends SubsystemBase {
     this.io = io;
     intakeDisconnectedAlert =
         new Alert(
-            "Intake motor disconnected"
-                + (DriverStation.isFMSAttached() ? ". All hope is lost. " : ""),
+            "Intake motor disconnected",
             Alert.AlertType.kError);
     extendDisconnectedAlert =
         new Alert(
-            "Intake extension motor disconnected"
-                + (DriverStation.isFMSAttached()
-                    ? " ___  _   _  _ ___ ___ \n"
-                        + "| _ \\/_\\ | \\| |_ _/ __|\n"
-                        + "|  _/ _ \\| .` || | (__ \n"
-                        + "|_|/_/ \\_\\_|\\_|___\\___|\n"
-                    : ""),
+            "Intake extension motor disconnected",
             Alert.AlertType.kError);
   }
 

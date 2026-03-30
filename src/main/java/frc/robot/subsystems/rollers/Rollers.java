@@ -21,13 +21,11 @@ public class Rollers extends SubsystemBase {
     this.io = io;
     rollerDisconnectedAlert =
         new Alert(
-            "Roller motor disconnected"
-                + (DriverStation.isFMSAttached() ? ". Good fucking luck. " : ""),
+            "T.I.C.K.L.E.R. motor disconnected",
             Alert.AlertType.kError);
     kickerDisconnectedAlert =
         new Alert(
-            "Kicker motor disconnected"
-                + (DriverStation.isFMSAttached() ? ". Good fucking luck. " : ""),
+            "Kicker motor disconnected",
             Alert.AlertType.kError);
   }
 

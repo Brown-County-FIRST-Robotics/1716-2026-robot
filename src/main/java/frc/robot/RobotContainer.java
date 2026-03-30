@@ -255,7 +255,7 @@ public class RobotContainer extends PeriodicRunnable {
                                 / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
                         false,
                         () ->
-                            DriverStation.getAlliance().get() == Alliance.Red
+                            DriverStation.getAlliance().isPresent() && DriverStation.getAlliance().get() == Alliance.Red
                                 ? (0.639445 - 0.0254)
                                 : 8.069275 - (0.639445 - 0.0254),
                         true,
@@ -279,7 +279,7 @@ public class RobotContainer extends PeriodicRunnable {
                                 / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
                         false,
                         () ->
-                            DriverStation.getAlliance().get() == Alliance.Red
+                            DriverStation.getAlliance().isPresent() && DriverStation.getAlliance().get() == Alliance.Red
                                 ? 8.069275 - (0.639445 - 0.0254)
                                 : (0.639445 - 0.0254),
                         true,
