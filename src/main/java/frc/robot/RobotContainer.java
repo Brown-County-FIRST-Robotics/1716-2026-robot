@@ -27,6 +27,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.drive.Drive.HoldMode;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
@@ -381,10 +382,38 @@ public class RobotContainer extends PeriodicRunnable {
                         () -> rollers.setSpeeds(-20, 0), () -> rollers.setSpeeds(0, 0))));
 
     // Rotation snapping
-    controller.y().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.kZero));
-    controller.b().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.kCW_90deg));
-    controller.a().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.k180deg));
-    controller.x().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.kCCW_90deg));
+    controller
+        .y()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  drive.targetAngle = Rotation2d.kZero;
+                  drive.holdingAngle = HoldMode.EXTERNAL;
+                }));
+    controller
+        .b()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  drive.targetAngle = Rotation2d.kCW_90deg;
+                  drive.holdingAngle = HoldMode.EXTERNAL;
+                }));
+    controller
+        .a()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  drive.targetAngle = Rotation2d.k180deg;
+                  drive.holdingAngle = HoldMode.EXTERNAL;
+                }));
+    controller
+        .x()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  drive.targetAngle = Rotation2d.kCCW_90deg;
+                  drive.holdingAngle = HoldMode.EXTERNAL;
+                }));
 
     shooter.register();
   }
