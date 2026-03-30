@@ -230,6 +230,13 @@ public class Drive extends SubsystemBase {
     // 2d field updates
     field.setRobotPose(getPose());
     SmartDashboard.putData("Field", field);
+
+    Logger.recordOutput("drive/holdingAngle", holdingAngle);
+    Logger.recordOutput("drive/holdingX", holdingX);
+    Logger.recordOutput("drive/holdingY", holdingY);
+    Logger.recordOutput("drive/targetAngle", targetAngle);
+    Logger.recordOutput("drive/targetX", targetX);
+    Logger.recordOutput("drive/targetY", targetY);
   }
 
   /**
