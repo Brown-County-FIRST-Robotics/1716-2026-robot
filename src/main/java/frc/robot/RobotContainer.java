@@ -98,7 +98,7 @@ public class RobotContainer extends PeriodicRunnable {
                 new ModuleIOTalonFX(TunerConstants.BackLeft),
                 new ModuleIOTalonFX(TunerConstants.BackRight));
         shooter = new Shooter(new ShooterIOKrakens(62, 9), new TurretIOKrakens(36, 35, 22));
-        rollers = new Rollers(new RollersIOKraken(43, 37));
+        rollers = new Rollers(new RollersIOKraken(43, 34, 37));
         intake = new Intake(new IntakeIOKraken(40, 38));
 
         // The ModuleIOTalonFXS implementation provides an example implementation for
@@ -331,7 +331,7 @@ public class RobotContainer extends PeriodicRunnable {
                     })
                 .alongWith(
                     Commands.waitSeconds(0.4)
-                        .andThen(Commands.run(() -> rollers.setSpeeds(20, 20), rollers)))
+                        .andThen(Commands.run(() -> rollers.setSpeeds(20, 20, 20), rollers)))
                 .alongWith(
                     Commands.race(
                             Commands.run(() -> controller.setRumble(RumbleType.kRightRumble, 0.5)),
@@ -341,7 +341,7 @@ public class RobotContainer extends PeriodicRunnable {
                 .finallyDo(
                     () -> {
                       shooter.quickWheelCommand(0);
-                      rollers.setSpeeds(0, 0);
+                      rollers.setSpeeds(0, 0, 0);
                       shooter.quickServoCommand(0);
                       controller.setRumble(RumbleType.kBothRumble, 0);
                     }));
@@ -378,7 +378,7 @@ public class RobotContainer extends PeriodicRunnable {
                 .intakeReverse()
                 .alongWith(
                     Commands.runEnd(
-                        () -> rollers.setSpeeds(-20, 0), () -> rollers.setSpeeds(0, 0))));
+                        () -> rollers.setSpeeds(20, -20, 0), () -> rollers.setSpeeds(0, 0, 0))));
 
     // Rotation snapping
     controller.y().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.kZero));
