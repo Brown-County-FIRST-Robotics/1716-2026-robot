@@ -13,6 +13,7 @@ import com.pathplanner.lib.util.FileVersionException;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.GenericHID;
@@ -401,6 +402,31 @@ public class RobotContainer extends PeriodicRunnable {
                             Commands.waitSeconds(0.375))
                         .andThen(
                             Commands.run(() -> controller.setRumble(RumbleType.kBothRumble, 1.0))))
+                .alongWith(
+                    DriveCommands.joystickDrive(
+                        drive,
+                        () -> {
+                          final double targetDistance = Math.pow(2.41, 2);
+                          Translation2d diff =
+                              FieldConstants.hub()
+                                  .toTranslation2d()
+                                  .minus(drive.getPose().getTranslation());
+                          return Math.sqrt(targetDistance - Math.pow(diff.getY(), 2));
+                        },
+                        true,
+                        () ->
+                            -controller.getLeftX()
+                                / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+                        false,
+                        () ->
+                            FieldConstants.hub()
+                                .toTranslation2d()
+                                .getAngle()
+                                .plus(Rotation2d.k180deg)
+                                .getRadians(),
+                        false,
+                        opcon.a(),
+                        () -> false))
                 .finallyDo(
                     () -> {
                       shooter.quickWheelCommand(0);
