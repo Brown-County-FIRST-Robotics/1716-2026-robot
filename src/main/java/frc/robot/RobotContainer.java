@@ -27,6 +27,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.drive.Drive.HoldMode;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
@@ -285,7 +286,10 @@ public class RobotContainer extends PeriodicRunnable {
                                 ? 8.069275 - (0.639445 - 0.0254)
                                 : (0.639445 - 0.0254),
                         true,
-                        () -> 0,
+                        () -> {
+                          double r = drive.getRotation().getCos();
+                          return r > 0 ? 0 : Math.PI;
+                        },
                         true,
                         opcon.a(),
                         () -> false),
@@ -381,10 +385,54 @@ public class RobotContainer extends PeriodicRunnable {
                         () -> rollers.setSpeeds(-20, 0), () -> rollers.setSpeeds(0, 0))));
 
     // Rotation snapping
-    controller.y().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.kZero));
-    controller.b().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.kCW_90deg));
-    controller.a().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.k180deg));
-    controller.x().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.kCCW_90deg));
+    controller
+        .y()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  drive.targetAngle =
+                      DriverStation.getAlliance().isPresent()
+                              && DriverStation.getAlliance().get() == Alliance.Blue
+                          ? Rotation2d.kZero
+                          : Rotation2d.k180deg;
+                  drive.holdingAngle = HoldMode.HOLD;
+                }));
+    controller
+        .b()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  drive.targetAngle =
+                      DriverStation.getAlliance().isPresent()
+                              && DriverStation.getAlliance().get() == Alliance.Blue
+                          ? Rotation2d.kCW_90deg
+                          : Rotation2d.kCCW_90deg;
+                  drive.holdingAngle = HoldMode.HOLD;
+                }));
+    controller
+        .a()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  drive.targetAngle =
+                      DriverStation.getAlliance().isPresent()
+                              && DriverStation.getAlliance().get() == Alliance.Blue
+                          ? Rotation2d.k180deg
+                          : Rotation2d.kZero;
+                  drive.holdingAngle = HoldMode.HOLD;
+                }));
+    controller
+        .x()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  drive.targetAngle =
+                      DriverStation.getAlliance().isPresent()
+                              && DriverStation.getAlliance().get() == Alliance.Blue
+                          ? Rotation2d.kCCW_90deg
+                          : Rotation2d.kCW_90deg;
+                  drive.holdingAngle = HoldMode.HOLD;
+                }));
 
     shooter.register();
   }
