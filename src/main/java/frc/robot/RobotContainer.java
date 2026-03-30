@@ -61,7 +61,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 public class RobotContainer extends PeriodicRunnable {
   // Subsystems
   private final Drive drive;
-  private final Quest qwest;
+  private final Quest quest;
   private Shooter shooter;
   private Rollers rollers;
   private Intake intake;
@@ -77,7 +77,7 @@ public class RobotContainer extends PeriodicRunnable {
   public RobotContainer() {
     super();
     Logger.recordOutput("Time Left", -1);
-    qwest = new Quest(new QuestIOQuest(new QuestNav()));
+    quest = new Quest(new QuestIOQuest(new QuestNav()));
     switch (Constants.currentMode) {
       case REAL:
         // Real robot, instantiate hardware IO implementations
@@ -85,12 +85,12 @@ public class RobotContainer extends PeriodicRunnable {
         // a CANcoder
         drive =
             new Drive(
-                qwest,
+                quest,
                 new GyroIO() {
                   @Override
                   public void updateInputs(GyroIOInputs inputs) {
-                    inputs.connected = qwest.isConnected();
-                    inputs.yawPosition = qwest.gyroLikeYaw();
+                    inputs.connected = quest.trust();
+                    inputs.yawPosition = quest.gyroLikeYaw();
                   }
                 },
                 new ModuleIOTalonFX(TunerConstants.FrontLeft),
@@ -123,7 +123,7 @@ public class RobotContainer extends PeriodicRunnable {
         // Sim robot, instantiate physics sim IO implementations
         drive =
             new Drive(
-                qwest,
+                quest,
                 new GyroIO() {},
                 new ModuleIOSim(TunerConstants.FrontLeft),
                 new ModuleIOSim(TunerConstants.FrontRight),
@@ -139,7 +139,7 @@ public class RobotContainer extends PeriodicRunnable {
         // Replayed robot, disable IO implementations
         drive =
             new Drive(
-                qwest,
+                quest,
                 new GyroIO() {},
                 new ModuleIO() {},
                 new ModuleIO() {},
@@ -255,7 +255,8 @@ public class RobotContainer extends PeriodicRunnable {
                                 / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
                         false,
                         () ->
-                            DriverStation.getAlliance().isPresent() && DriverStation.getAlliance().get() == Alliance.Red
+                            DriverStation.getAlliance().isPresent()
+                                    && DriverStation.getAlliance().get() == Alliance.Red
                                 ? (0.639445 - 0.0254)
                                 : 8.069275 - (0.639445 - 0.0254),
                         true,
@@ -279,7 +280,8 @@ public class RobotContainer extends PeriodicRunnable {
                                 / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
                         false,
                         () ->
-                            DriverStation.getAlliance().isPresent() && DriverStation.getAlliance().get() == Alliance.Red
+                            DriverStation.getAlliance().isPresent()
+                                    && DriverStation.getAlliance().get() == Alliance.Red
                                 ? 8.069275 - (0.639445 - 0.0254)
                                 : (0.639445 - 0.0254),
                         true,

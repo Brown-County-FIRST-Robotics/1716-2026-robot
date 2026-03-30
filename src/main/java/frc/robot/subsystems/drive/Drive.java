@@ -339,7 +339,7 @@ public class Drive extends SubsystemBase {
   /** Returns the current odometry pose. */
   @AutoLogOutput(key = "Odometry/Robot")
   public Pose2d getPose() {
-    if (quest.isConnected()) return quest.getPose();
+    if (quest.trust()) return quest.getPose();
     return poseEstimator.getEstimatedPosition();
   }
 
@@ -354,8 +354,8 @@ public class Drive extends SubsystemBase {
 
   /** Resets the current odometry pose. */
   public void setPose(Pose2d pose) {
+    quest.setPose(pose);
     poseEstimator.resetPosition(rawGyroRotation, getModulePositions(), pose);
-    if (quest.isConnected()) quest.setPose(pose);
   }
 
   /** Resets the current holding angle of the robot */

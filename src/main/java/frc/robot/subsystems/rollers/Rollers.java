@@ -2,7 +2,6 @@ package frc.robot.subsystems.rollers;
 
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.wpilibj.Alert;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.OurConstants;
 import org.littletonrobotics.junction.Logger;
@@ -20,13 +19,8 @@ public class Rollers extends SubsystemBase {
   public Rollers(RollersIO io) {
     this.io = io;
     rollerDisconnectedAlert =
-        new Alert(
-            "T.I.C.K.L.E.R. motor disconnected",
-            Alert.AlertType.kError);
-    kickerDisconnectedAlert =
-        new Alert(
-            "Kicker motor disconnected",
-            Alert.AlertType.kError);
+        new Alert("T.I.C.K.L.E.R. motor disconnected", Alert.AlertType.kError);
+    kickerDisconnectedAlert = new Alert("Kicker motor disconnected", Alert.AlertType.kError);
   }
 
   public void setSpeeds(double rollerVelocity, double kicker_velocity) {

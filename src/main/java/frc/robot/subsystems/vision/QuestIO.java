@@ -6,10 +6,9 @@ import org.littletonrobotics.junction.AutoLog;
 public interface QuestIO {
   @AutoLog
   class QuestIOInputs {
-    Pose3d whereami = new Pose3d();
+    Pose3d lastPose = new Pose3d();
     boolean connected = false;
-    Pose3d[] raw_poses = new Pose3d[] {};
-    double[] raw_timestamps = new double[] {};
+    boolean tracking = false;
   }
 
   default void updateInputs(QuestIOInputs inputs) {}
