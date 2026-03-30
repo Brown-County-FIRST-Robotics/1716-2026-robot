@@ -53,6 +53,41 @@ import org.json.simple.parser.ParseException;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
+class MirroredAutoInfo {
+  public String name;
+  public String desc;
+  public Command parallelCommand;
+
+  public MirroredAutoInfo(String name, String desc, Command parallelCommand) {
+    this.name = name;
+    this.desc = desc;
+    this.parallelCommand = parallelCommand;
+  }
+
+  public static Command generateParallelCommand(
+      Intake intake,
+      Shooter shooter,
+      Rollers rollers,
+      double intakeWaitSeconds,
+      double shootWaitSeconds) {
+    return Commands.waitSeconds(intakeWaitSeconds)
+        .andThen(
+            intake
+                .extendHopper()
+                .andThen(intake.intake().withTimeout(shootWaitSeconds - intakeWaitSeconds))
+                .andThen(
+                    Commands.run(
+                            () -> {
+                              shooter.setShooterSpeed(80);
+                              shooter.quickServoCommand(1);
+                            })
+                        .andThen(
+                            Commands.waitSeconds(0.4)
+                                .andThen(
+                                    Commands.run(() -> rollers.setSpeeds(20, 20, 20), rollers)))));
+  }
+}
+
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
  * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
@@ -186,6 +221,11 @@ public class RobotContainer extends PeriodicRunnable {
         "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
 
     // ########## Choreo autos ##########
+    Command fullFieldSystemCommand =
+        MirroredAutoInfo.generateParallelCommand(intake, shooter, rollers, 0.5, 7.5);
+    Command halfFieldSystemCommand =
+        MirroredAutoInfo.generateParallelCommand(intake, shooter, rollers, 0.3, 7);
+
     try {
       // Single-side autos that don't need to be mirrored
       autoChooser.addOption(
@@ -196,24 +236,43 @@ public class RobotContainer extends PeriodicRunnable {
 
       // ### NOTE ###
       // It is important that autos are developed as *BLUE* and the originating
-      // side is the same as the human player. In Choreo as of 2/20/26, that is
+      // side is the same as the human player. In Choreo as of 3/30/26, that is
       // the bottom left corner.
-      String[][] items = {
-        // {name, description}
-        {"FuelToucher", "FULL FIELD - Push balls to side -> end on same trench"},
-        {"FuelCollectorFull", "FULL FIELD - Push balls to side -> end on opposite trench"},
-        {"FuelCollectorHalf", "HALF FIELD - Push balls to side -> end on same trench"}
+      MirroredAutoInfo[] items = {
+        // (name, description, parallel command - shooting, intake, etc)
+        new MirroredAutoInfo(
+            "FuelToucher",
+            "FULL FIELD - Push balls to side -> end on same trench",
+            Commands.none()),
+        new MirroredAutoInfo(
+            "FuelCollectorFull",
+            "FULL FIELD - Push balls to side -> end on opposite trench",
+            Commands.none()),
+        new MirroredAutoInfo(
+            "FuelCollectorHalf",
+            "HALF FIELD - Push balls to side -> end on same trench",
+            Commands.none()),
+        new MirroredAutoInfo(
+            "FuelToucher", "FULL FIELD - ADVANCED - End on same trench", fullFieldSystemCommand),
+        new MirroredAutoInfo(
+            "FuelCollectorHalf",
+            "HALF FIELD - ADVANCED - End on same trench",
+            halfFieldSystemCommand)
         // Add more here here
       };
 
-      for (String[] item : items) {
-        String name = item[0];
-        String desc = item[1];
+      for (MirroredAutoInfo item : items) {
+        String name = item.name;
+        String desc = item.desc;
+        Command parallel = item.parallelCommand;
 
         PathPlannerPath path = PathPlannerPath.fromChoreoTrajectory(name);
-        autoChooser.addOption("Choreo - Human player side - " + desc, AutoBuilder.followPath(path));
         autoChooser.addOption(
-            "Choreo - Depot side - " + desc, AutoBuilder.followPath(path.mirrorPath()));
+            "Choreo - Human player side - " + desc,
+            AutoBuilder.followPath(path).alongWith(parallel));
+        autoChooser.addOption(
+            "Choreo - Depot side - " + desc,
+            AutoBuilder.followPath(path.mirrorPath()).alongWith(parallel));
       }
     } catch (FileVersionException | IOException | ParseException e) {
       e.printStackTrace();
