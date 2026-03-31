@@ -8,6 +8,8 @@ import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
@@ -104,14 +106,18 @@ public class Shooter extends SubsystemBase {
     double distanceToCenter =
         Math.abs(8.270494 - robot.getX()); // Distance taken on the X axis (the long way)
     double distanceToMidline =
-        4.034536
-            - robot.getY(); // Distance taken on the Y axis (the short way), positive means human
-    // player side
+        4.034536 - robot.getY(); // Distance taken on the Y axis (the short way)
+    // positive means human player side
+
+    boolean isFlipped =
+        DriverStation.getAlliance().isPresent()
+            && DriverStation.getAlliance().get() == Alliance.Red;
 
     Translation2d targetPosition;
     if (distanceToCenter > 3.6449) targetPosition = FieldConstants.hub().toTranslation2d();
-    else if (distanceToMidline > 0) targetPosition = new Translation2d(2, 1.5);
-    else targetPosition = new Translation2d(2, 8.069275 - 1.5);
+    else if (distanceToMidline > 0)
+      targetPosition = new Translation2d(isFlipped ? 16.54099 - 2 : 2, 1.5);
+    else targetPosition = new Translation2d(isFlipped ? 16.54099 - 2 : 2, 8.069275 - 1.5);
     return targetPosition
         .minus(robot.plus(new Transform2d(-0.2, 0.3, Rotation2d.kZero)).getTranslation())
         .getAngle();

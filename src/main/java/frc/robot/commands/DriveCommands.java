@@ -39,7 +39,7 @@ public class DriveCommands {
   private static final double MIN_HOLD_ROTATION = 2 * Math.PI * 0.1;
   private static final double DISTANCE_KP = 4.25;
   private static final double DISTANCE_KD = 0.15;
-  private static final double ANGLE_KP = 8.0;
+  private static final double ANGLE_KP = 6.0;
   private static final double ANGLE_KD = 0.4;
   private static final double ANGLE_MAX_VELOCITY = 8.0;
   private static final double ANGLE_MAX_ACCELERATION = 20.0;
@@ -89,7 +89,7 @@ public class DriveCommands {
             ANGLE_KD,
             new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
     angleController.enableContinuousInput(-Math.PI, Math.PI);
-    angleController.setTolerance(Rotation2d.fromDegrees(5).getRadians());
+    angleController.setTolerance(Rotation2d.fromDegrees(2).getRadians());
 
     ProfiledPIDController distanceControllerX =
         new ProfiledPIDController(
@@ -130,7 +130,7 @@ public class DriveCommands {
                   DriverStation.getAlliance().isPresent()
                       && DriverStation.getAlliance().get() == Alliance.Red;
 
-              if (isFlipped) {
+              if (!robotRelativeSupplier.getAsBoolean() && isFlipped) {
                 x *= -1;
                 y *= -1;
               }
@@ -152,7 +152,7 @@ public class DriveCommands {
                 if (Math.abs(omega) > DEADBAND && !useAsSetAngle) {
                   drive.holdingAngle = HoldMode.OFF;
                 } else if (drive.holdingAngle == HoldMode.OFF
-                    && currentFieldSpeeds.omegaRadiansPerSecond < MIN_HOLD_ROTATION) {
+                    && Math.abs(currentFieldSpeeds.omegaRadiansPerSecond) < MIN_HOLD_ROTATION) {
 
                   drive.holdingAngle = HoldMode.HOLD;
                   drive.targetAngle =
@@ -163,15 +163,18 @@ public class DriveCommands {
                               .plus(
                                   Rotation2d.fromRadians(
                                       currentFieldSpeeds.omegaRadiansPerSecond * LOOKAHEAD_Z));
+                  angleController.reset(
+                      self.getRotation().getRadians(), currentFieldSpeeds.omegaRadiansPerSecond);
                 }
                 if (drive.holdingAngle != HoldMode.OFF) {
-                  targetFieldSpeeds.omegaRadiansPerSecond =
+                  double pidTheta =
                       angleController.calculate(
                           self.getRotation().getRadians(), drive.targetAngle.getRadians());
+                  targetFieldSpeeds.omegaRadiansPerSecond = angleController.atGoal() ? 0 : pidTheta;
                 }
 
                 if ((Math.abs(x) < DEADBAND
-                        && currentFieldSpeeds.vxMetersPerSecond < MIN_HOLD_VELOCITY)
+                        && Math.abs(currentFieldSpeeds.vxMetersPerSecond) < MIN_HOLD_VELOCITY)
                     || useAsSetPosX) {
                   if (!drive.holdingX) {
                     drive.holdingX = true;
@@ -187,7 +190,7 @@ public class DriveCommands {
                   drive.holdingX = false;
                 }
                 if ((Math.abs(y) < DEADBAND
-                        && currentFieldSpeeds.vyMetersPerSecond < MIN_HOLD_VELOCITY)
+                        && Math.abs(currentFieldSpeeds.vyMetersPerSecond) < MIN_HOLD_VELOCITY)
                     || useAsSetPosY) {
                   if (!drive.holdingY) {
                     drive.holdingY = true;
