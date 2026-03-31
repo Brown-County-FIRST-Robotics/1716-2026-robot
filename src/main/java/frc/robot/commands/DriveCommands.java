@@ -52,6 +52,10 @@ public class DriveCommands {
   private static final double LOOKAHEAD_Y = 0.05;
   private static final double LOOKAHEAD_Z = 0.05;
 
+  private static final double SHAKE_AMPLITUDE = 1.0; // m/s
+  private static final double SHAKE_FREQUENCY = 1.4; // hz
+  private static final double SHAKE_MAX_ACCEL = 5.0; // m/s^2
+
   private DriveCommands() {}
 
   private static Translation2d getLinearVelocityFromJoysticks(double x, double y) {
@@ -66,6 +70,26 @@ public class DriveCommands {
     return new Pose2d(Translation2d.kZero, linearDirection)
         .transformBy(new Transform2d(linearMagnitude, 0.0, Rotation2d.kZero))
         .getTranslation();
+  }
+
+  public static Command shake(Drive drive) {
+    Timer shakeTimer = new Timer();
+    SlewRateLimiter shakeLimiter = new SlewRateLimiter(SHAKE_MAX_ACCEL);
+
+    return Commands.run(
+            () -> {
+              double rawVy =
+                  SHAKE_AMPLITUDE * Math.sin(2.0 * Math.PI * SHAKE_FREQUENCY * shakeTimer.get());
+              ChassisSpeeds target = new ChassisSpeeds();
+              target.vyMetersPerSecond = shakeLimiter.calculate(rawVy);
+              drive.runVelocity(target);
+            },
+            drive)
+        .beforeStarting(
+            () -> {
+              shakeTimer.restart();
+              shakeLimiter.reset(drive.getChassisSpeeds().vyMetersPerSecond);
+            });
   }
 
   /**
