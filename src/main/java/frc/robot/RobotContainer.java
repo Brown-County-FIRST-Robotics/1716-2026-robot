@@ -13,7 +13,6 @@ import com.pathplanner.lib.util.FileVersionException;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.GenericHID;
@@ -78,7 +77,7 @@ class MirroredAutoInfo {
                 .extendHopper()
                 .andThen(intake.intake().withTimeout(shootWaitSeconds - intakeWaitSeconds))
                 .andThen(
-                    Commands.run(
+                    Commands.runOnce(
                             () -> {
                               shooter.setShooterSpeed(80);
                               shooter.quickServoCommand(1);
