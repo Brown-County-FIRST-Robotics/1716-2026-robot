@@ -23,6 +23,7 @@ public class ShooterIOKrakens implements ShooterIO {
   StatusSignal<AngularVelocity> shooterVelocitySignal;
   StatusSignal<Current> shooterCurrent;
   StatusSignal<Voltage> shooterAppliedOutputs;
+  double llp = 0.0;
 
   public ShooterIOKrakens(int motorID, int servoID) {
     shooterMotor = new TalonFX(motorID, OurConstants.CAN_BUS);
@@ -54,7 +55,7 @@ public class ShooterIOKrakens implements ShooterIO {
         BaseStatusSignal.refreshAll(shooterAppliedOutputs, shooterVelocitySignal, shooterCurrent);
     inputs.shooterAppliedOutput = shooterAppliedOutputs.getValueAsDouble();
     inputs.shooterCurrent = shooterCurrent.getValueAsDouble();
-    inputs.shooterHoodPosition = hoodServo.getPosition();
+    inputs.shooterHoodPosition = llp;
     inputs.shooterVelocity = shooterVelocitySignal.getValueAsDouble();
     inputs.connected = status.isOK();
   }
@@ -71,6 +72,7 @@ public class ShooterIOKrakens implements ShooterIO {
 
   @Override
   public void commandHoodPosition(double length) {
+    llp = length;
     hoodServo.setPulseTimeMicroseconds((int) (1000 + 1000 * (length / 2)));
   }
 }
