@@ -240,10 +240,6 @@ public class RobotContainer extends PeriodicRunnable {
             "FULL FIELD - Push balls to side -> end on same trench",
             () -> Commands.none()),
         new MirroredAutoInfo(
-            "FuelCollectorFull",
-            "FULL FIELD - Push balls to side -> end on opposite trench",
-            () -> Commands.none()),
-        new MirroredAutoInfo(
             "FuelCollectorHalf",
             "HALF FIELD - Push balls to side -> end on same trench",
             () -> Commands.none()),
