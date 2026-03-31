@@ -21,7 +21,7 @@ public class Shooter extends SubsystemBase {
   Rotation2d hoodAngle = Rotation2d.kZero;
   private static final double hoodLegLength1 = 4.87;
   private static final double hoodLegLength2 = 8.20;
-  private static final double hoodZero = Math.asin(1.75 / 9);
+  private static final double hoodZero = 0.221;
   ShooterIOInputsAutoLogged inputs = new ShooterIOInputsAutoLogged();
   ShooterIO shooterIO;
   TurretIO turretIO;
@@ -75,6 +75,7 @@ public class Shooter extends SubsystemBase {
         fuseEncoders(turretInputs.encoder_a_position, turretInputs.encoder_b_position);
     Logger.recordOutput("turret/absoluteRotation", turret_rotation);
     turret_rotation = Rotation2d.fromRadians(wdmod(turret_rotation.getRadians()));
+    Logger.recordOutput("hood", forwardKinematics(inputs.shooterHoodPosition));
 
     // Handle disconnection alerts
     shooterDisconnectedAlert.set(!shooterConnectedDebouncer.calculate(inputs.connected));
@@ -118,7 +119,9 @@ public class Shooter extends SubsystemBase {
     else if (distanceToMidline > 0)
       targetPosition = new Translation2d(isFlipped ? 16.54099 - 2 : 2, 1.5);
     else targetPosition = new Translation2d(isFlipped ? 16.54099 - 2 : 2, 8.069275 - 1.5);
-    Logger.recordOutput("turret/autoAimPos", new Pose2d(targetPosition.getX(), targetPosition.getY(), Rotation2d.kZero));
+    Logger.recordOutput(
+        "turret/autoAimPos",
+        new Pose2d(targetPosition.getX(), targetPosition.getY(), Rotation2d.kZero));
     return targetPosition
         .minus(robot.plus(new Transform2d(-0.2, 0.3, Rotation2d.kZero)).getTranslation())
         .getAngle();
@@ -185,7 +188,7 @@ public class Shooter extends SubsystemBase {
             + Math.acos(
                 (hoodLegLength1 * hoodLegLength1
                         + hoodLegLength2 * hoodLegLength2
-                        - length * length)
+                        - (length + 4.75) * (length + 4.75))
                     / (2.0 * hoodLegLength1 * hoodLegLength2)));
   }
 
@@ -198,7 +201,7 @@ public class Shooter extends SubsystemBase {
   }
 
   public void quickServoCommand(double increment) {
-    shooterIO.commandHoodPosition(increment);
+    shooterIO.commandHoodPosition(increment + inputs.shooterHoodPosition);
   }
 
   public Shooter(ShooterIO io, TurretIO tio) {
