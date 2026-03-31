@@ -13,6 +13,7 @@ import com.pathplanner.lib.util.FileVersionException;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.GenericHID;
@@ -49,6 +50,7 @@ import frc.robot.utils.PeriodicRunnable;
 import gg.questnav.questnav.QuestNav;
 import java.io.IOException;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.json.simple.parser.ParseException;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
@@ -56,9 +58,9 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 class MirroredAutoInfo {
   public String name;
   public String desc;
-  public Command parallelCommand;
+  public Supplier<Command> parallelCommand;
 
-  public MirroredAutoInfo(String name, String desc, Command parallelCommand) {
+  public MirroredAutoInfo(String name, String desc, Supplier<Command> parallelCommand) {
     this.name = name;
     this.desc = desc;
     this.parallelCommand = parallelCommand;
@@ -221,11 +223,6 @@ public class RobotContainer extends PeriodicRunnable {
         "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
 
     // ########## Choreo autos ##########
-    Command fullFieldSystemCommand =
-        MirroredAutoInfo.generateParallelCommand(intake, shooter, rollers, 0.5, 7.5);
-    Command halfFieldSystemCommand =
-        MirroredAutoInfo.generateParallelCommand(intake, shooter, rollers, 0.3, 7);
-
     try {
       // Single-side autos that don't need to be mirrored
       autoChooser.addOption(
@@ -243,36 +240,38 @@ public class RobotContainer extends PeriodicRunnable {
         new MirroredAutoInfo(
             "FuelToucher",
             "FULL FIELD - Push balls to side -> end on same trench",
-            Commands.none()),
+            () -> Commands.none()),
         new MirroredAutoInfo(
             "FuelCollectorFull",
             "FULL FIELD - Push balls to side -> end on opposite trench",
-            Commands.none()),
+            () -> Commands.none()),
         new MirroredAutoInfo(
             "FuelCollectorHalf",
             "HALF FIELD - Push balls to side -> end on same trench",
-            Commands.none()),
+            () -> Commands.none()),
         new MirroredAutoInfo(
-            "FuelToucher", "FULL FIELD - ADVANCED - End on same trench", fullFieldSystemCommand),
+            "FuelToucher",
+            "FULL FIELD - ADVANCED - End on same trench",
+            () -> MirroredAutoInfo.generateParallelCommand(intake, shooter, rollers, 0.5, 7.5)),
         new MirroredAutoInfo(
             "FuelCollectorHalf",
             "HALF FIELD - ADVANCED - End on same trench",
-            halfFieldSystemCommand)
+            () -> MirroredAutoInfo.generateParallelCommand(intake, shooter, rollers, 0.3, 7))
         // Add more here here
       };
 
       for (MirroredAutoInfo item : items) {
         String name = item.name;
         String desc = item.desc;
-        Command parallel = item.parallelCommand;
+        Supplier<Command> parallel = item.parallelCommand;
 
         PathPlannerPath path = PathPlannerPath.fromChoreoTrajectory(name);
         autoChooser.addOption(
             "Choreo - Human player side - " + desc,
-            AutoBuilder.followPath(path).alongWith(parallel));
+            AutoBuilder.followPath(path).alongWith(parallel.get()));
         autoChooser.addOption(
             "Choreo - Depot side - " + desc,
-            AutoBuilder.followPath(path.mirrorPath()).alongWith(parallel));
+            AutoBuilder.followPath(path.mirrorPath()).alongWith(parallel.get()));
       }
     } catch (FileVersionException | IOException | ParseException e) {
       e.printStackTrace();
