@@ -10,6 +10,8 @@ package frc.robot;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.util.FileVersionException;
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
@@ -115,9 +117,15 @@ public class RobotContainer extends PeriodicRunnable {
   private final LoggedDashboardChooser<Command> autoChooser;
   private final LoggedDashboardChooser<Pose2d> initPosChooser;
 
+  private final UsbCamera camera;
+
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     super();
+
+    camera = CameraServer.startAutomaticCapture();
+    camera.setResolution(640, 480);
+    camera.setFPS(30);
     quest = new Quest(new QuestIOQuest(new QuestNav()));
     switch (Constants.currentMode) {
       case REAL:
