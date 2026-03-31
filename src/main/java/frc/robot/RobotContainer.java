@@ -250,7 +250,7 @@ public class RobotContainer extends PeriodicRunnable {
         new MirroredAutoInfo(
             "FuelCollectorHalf",
             "HALF FIELD - ADVANCED - End on same trench",
-            () -> MirroredAutoInfo.generateParallelCommand(intake, shooter, rollers, 0.3, 7))
+            () -> MirroredAutoInfo.generateParallelCommand(intake, shooter, rollers, 0.2, 7.5))
         // Add more here here
       };
 
@@ -394,6 +394,7 @@ public class RobotContainer extends PeriodicRunnable {
                             Commands.waitSeconds(0.375))
                         .andThen(
                             Commands.run(() -> controller.setRumble(RumbleType.kBothRumble, 1.0))))
+                .alongWith(Commands.run(() -> shooter.commandHoodToTrack(drive.getPose())))
                 .finallyDo(
                     () -> {
                       shooter.quickWheelCommand(0);
