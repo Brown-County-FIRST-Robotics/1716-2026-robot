@@ -130,7 +130,7 @@ public class DriveCommands {
                   DriverStation.getAlliance().isPresent()
                       && DriverStation.getAlliance().get() == Alliance.Red;
 
-              if (isFlipped) {
+              if (!robotRelativeSupplier.getAsBoolean() && isFlipped) {
                 x *= -1;
                 y *= -1;
               }
@@ -152,7 +152,7 @@ public class DriveCommands {
                 if (Math.abs(omega) > DEADBAND && !useAsSetAngle) {
                   drive.holdingAngle = HoldMode.OFF;
                 } else if (drive.holdingAngle == HoldMode.OFF
-                    && currentFieldSpeeds.omegaRadiansPerSecond < MIN_HOLD_ROTATION) {
+                    && Math.abs(currentFieldSpeeds.omegaRadiansPerSecond) < MIN_HOLD_ROTATION) {
 
                   drive.holdingAngle = HoldMode.HOLD;
                   drive.targetAngle =
@@ -171,7 +171,7 @@ public class DriveCommands {
                 }
 
                 if ((Math.abs(x) < DEADBAND
-                        && currentFieldSpeeds.vxMetersPerSecond < MIN_HOLD_VELOCITY)
+                        && Math.abs(currentFieldSpeeds.vxMetersPerSecond) < MIN_HOLD_VELOCITY)
                     || useAsSetPosX) {
                   if (!drive.holdingX) {
                     drive.holdingX = true;
@@ -187,7 +187,7 @@ public class DriveCommands {
                   drive.holdingX = false;
                 }
                 if ((Math.abs(y) < DEADBAND
-                        && currentFieldSpeeds.vyMetersPerSecond < MIN_HOLD_VELOCITY)
+                        && Math.abs(currentFieldSpeeds.vyMetersPerSecond) < MIN_HOLD_VELOCITY)
                     || useAsSetPosY) {
                   if (!drive.holdingY) {
                     drive.holdingY = true;
