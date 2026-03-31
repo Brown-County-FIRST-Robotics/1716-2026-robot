@@ -66,26 +66,31 @@ class MirroredAutoInfo {
   }
 
   public static Command generateParallelCommand(
+      Drive drive,
       Intake intake,
       Shooter shooter,
       Rollers rollers,
       double intakeWaitSeconds,
       double shootWaitSeconds) {
-    return Commands.waitSeconds(intakeWaitSeconds)
-        .andThen(
-            intake
-                .extendHopper()
-                .andThen(intake.intake().withTimeout(shootWaitSeconds - intakeWaitSeconds))
-                .andThen(
-                    Commands.runOnce(
-                            () -> {
-                              shooter.setShooterSpeed(80);
-                              shooter.quickServoCommand(1);
-                            })
-                        .andThen(
-                            Commands.waitSeconds(0.4)
-                                .andThen(
-                                    Commands.run(() -> rollers.setSpeeds(20, 20, 20), rollers)))));
+    return Commands.race(
+        Commands.waitSeconds(intakeWaitSeconds)
+            .andThen(
+                intake
+                    .extendHopper()
+                    .andThen(intake.intake().withTimeout(shootWaitSeconds - intakeWaitSeconds))
+                    .andThen(
+                        Commands.runOnce(
+                                () -> {
+                                  shooter.setShooterSpeed(80);
+                                  shooter.quickServoCommand(1);
+                                })
+                            .andThen(
+                                Commands.waitSeconds(0.4)
+                                    .andThen(
+                                        Commands.run(() -> rollers.setSpeeds(20, 20, 20), rollers)))
+                            .alongWith(
+                                Commands.run(() -> shooter.trackBothToShoot(drive.getPose()))))),
+        Commands.waitSeconds(14.5));
   }
 }
 
@@ -246,11 +251,14 @@ public class RobotContainer extends PeriodicRunnable {
         new MirroredAutoInfo(
             "FuelToucher",
             "FULL FIELD - ADVANCED - End on same trench",
-            () -> MirroredAutoInfo.generateParallelCommand(intake, shooter, rollers, 0.5, 7.5)),
+            () ->
+                MirroredAutoInfo.generateParallelCommand(
+                    drive, intake, shooter, rollers, 0.5, 7.5)),
         new MirroredAutoInfo(
             "FuelCollectorHalf",
             "HALF FIELD - ADVANCED - End on same trench",
-            () -> MirroredAutoInfo.generateParallelCommand(intake, shooter, rollers, 0.3, 7))
+            () ->
+                MirroredAutoInfo.generateParallelCommand(drive, intake, shooter, rollers, 0.2, 7.5))
         // Add more here here
       };
 
@@ -394,6 +402,7 @@ public class RobotContainer extends PeriodicRunnable {
                             Commands.waitSeconds(0.375))
                         .andThen(
                             Commands.run(() -> controller.setRumble(RumbleType.kBothRumble, 1.0))))
+                .alongWith(Commands.run(() -> shooter.trackBothToShoot(drive.getPose()), shooter))
                 .finallyDo(
                     () -> {
                       shooter.quickWheelCommand(0);

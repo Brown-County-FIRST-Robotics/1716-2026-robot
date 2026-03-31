@@ -6,6 +6,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -20,8 +21,8 @@ public class Shooter extends SubsystemBase {
   double abs_rel_turret_offset = 0.0;
   Rotation2d hoodAngle = Rotation2d.kZero;
   private static final double hoodLegLength1 = 4.87;
-  private static final double hoodLegLength2 = 8.20;
-  private static final double hoodZero = Math.asin(1.75 / 9);
+  private static final double hoodLegLength2 = 8.29;
+  private static final double hoodZero = 0.221 + (0.221 - 0.02) + 0.02 - 0.738;
   ShooterIOInputsAutoLogged inputs = new ShooterIOInputsAutoLogged();
   ShooterIO shooterIO;
   TurretIO turretIO;
@@ -75,6 +76,7 @@ public class Shooter extends SubsystemBase {
         fuseEncoders(turretInputs.encoder_a_position, turretInputs.encoder_b_position);
     Logger.recordOutput("turret/absoluteRotation", turret_rotation);
     turret_rotation = Rotation2d.fromRadians(wdmod(turret_rotation.getRadians()));
+    Logger.recordOutput("hood", forwardKinematics(inputs.shooterHoodPosition));
 
     // Handle disconnection alerts
     shooterDisconnectedAlert.set(!shooterConnectedDebouncer.calculate(inputs.connected));
@@ -102,7 +104,7 @@ public class Shooter extends SubsystemBase {
             + turretInputs.position);
   }
 
-  public Rotation2d getTurretTarget(Pose2d robot) {
+  public Translation2d getTurretTarget(Pose2d robot) {
     double distanceToCenter =
         Math.abs(8.270494 - robot.getX()); // Distance taken on the X axis (the long way)
     double distanceToMidline =
@@ -121,14 +123,30 @@ public class Shooter extends SubsystemBase {
     Logger.recordOutput(
         "turret/autoAimPos",
         new Pose2d(targetPosition.getX(), targetPosition.getY(), Rotation2d.kZero));
-    return targetPosition
-        .minus(robot.plus(new Transform2d(-0.2, 0.3, Rotation2d.kZero)).getTranslation())
-        .getAngle();
+    return targetPosition.minus(
+        robot.plus(new Transform2d(-0.2, 0.3, Rotation2d.kZero)).getTranslation());
   }
 
   public void commandTurretToTrack(Pose2d p2) {
-    var correctRotation = getTurretTarget(p2).minus(p2.getRotation());
+    var correctRotation = getTurretTarget(p2).getAngle().minus(p2.getRotation());
     commandTurret(correctRotation);
+  }
+
+  public void trackBothToShoot(Pose2d p2) {
+    commandTurretToTrack(p2);
+    commandHoodToTrack(p2);
+  }
+
+  public void commandHoodToTrack(Pose2d p2) {
+    double distanceToTarget = Units.metersToInches(getTurretTarget(p2).getNorm());
+    double target = distanceToTarget * 0.0095 + 0.165;
+    /* Collected data on 3/31/26
+      60": 0.73
+      50": 0.65
+      40": 0.54
+    */
+
+    shooterIO.commandHoodPosition(target);
   }
 
   // Turret, shooter
@@ -137,7 +155,7 @@ public class Shooter extends SubsystemBase {
     var groundDistanceToHub =
         currentPose.getTranslation().minus(hubPosition.toTranslation2d()).getNorm();
     var heightDifference = hubPosition.getZ() - 0.4;
-    var exitVelocity = 5;
+    var exitVelocity = 8;
     var gravity = 9.81;
     var theta =
         Math.atan(
@@ -176,9 +194,10 @@ public class Shooter extends SubsystemBase {
   // both of the next functions together are just the law of cosines, bc it is a literal triangle
   private static double inverseKinematics(Rotation2d angle) {
     return Math.sqrt(
-        hoodLegLength1 * hoodLegLength1
-            + hoodLegLength2 * hoodLegLength2
-            - 2.0 * hoodLegLength1 * hoodLegLength2 * Math.cos(angle.getRadians() - hoodZero));
+            hoodLegLength1 * hoodLegLength1
+                + hoodLegLength2 * hoodLegLength2
+                - 2.0 * hoodLegLength1 * hoodLegLength2 * Math.cos(angle.getRadians() - hoodZero))
+        - 4.63;
   }
 
   private static Rotation2d forwardKinematics(double length) {
@@ -187,7 +206,7 @@ public class Shooter extends SubsystemBase {
             + Math.acos(
                 (hoodLegLength1 * hoodLegLength1
                         + hoodLegLength2 * hoodLegLength2
-                        - length * length)
+                        - (length + 4.63) * (length + 4.63))
                     / (2.0 * hoodLegLength1 * hoodLegLength2)));
   }
 
@@ -200,7 +219,7 @@ public class Shooter extends SubsystemBase {
   }
 
   public void quickServoCommand(double increment) {
-    shooterIO.commandHoodPosition(increment);
+    shooterIO.commandHoodPosition(increment + inputs.shooterHoodPosition);
   }
 
   public Shooter(ShooterIO io, TurretIO tio) {
