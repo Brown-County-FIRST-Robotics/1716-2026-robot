@@ -394,6 +394,7 @@ public class RobotContainer extends PeriodicRunnable {
                             Commands.waitSeconds(0.375))
                         .andThen(
                             Commands.run(() -> controller.setRumble(RumbleType.kBothRumble, 1.0))))
+                .alongWith(Commands.run(() -> shooter.commandHoodToTrack(drive.getPose())))
                 .finallyDo(
                     () -> {
                       shooter.quickWheelCommand(0);
