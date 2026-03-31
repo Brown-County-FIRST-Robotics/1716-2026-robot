@@ -13,7 +13,6 @@ import com.pathplanner.lib.util.FileVersionException;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.GenericHID;
@@ -76,17 +75,21 @@ class MirroredAutoInfo {
         .andThen(
             intake
                 .extendHopper()
-                .andThen(intake.intake().withTimeout(shootWaitSeconds - intakeWaitSeconds))
-                .andThen(
-                    Commands.run(
-                            () -> {
-                              shooter.setShooterSpeed(80);
-                              shooter.quickServoCommand(1);
-                            })
+                .alongWith(
+                    intake
+                        .intake()
+                        .withTimeout(shootWaitSeconds - intakeWaitSeconds)
                         .andThen(
-                            Commands.waitSeconds(0.4)
+                            Commands.runOnce(
+                                    () -> {
+                                      shooter.setShooterSpeed(80);
+                                      shooter.quickServoCommand(1);
+                                    })
                                 .andThen(
-                                    Commands.run(() -> rollers.setSpeeds(20, 20, 20), rollers)))));
+                                    Commands.waitSeconds(0.4)
+                                        .andThen(
+                                            Commands.run(
+                                                () -> rollers.setSpeeds(20, 20, 20), rollers))))));
   }
 }
 
@@ -428,6 +431,20 @@ public class RobotContainer extends PeriodicRunnable {
     opcon.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
 
     // Intake/hopper control
+    controller.povUp().whileTrue(intake.extendHopperVelocity());
+    controller.povDown().whileTrue(intake.retractHopperVelocity());
+    controller.povRight().onTrue(intake.intake());
+    controller
+        .povLeft()
+        .whileTrue(
+            intake
+                .intakeReverse()
+                .alongWith(
+                    Commands.runEnd(
+                        () -> rollers.setSpeeds(20, -20, 0),
+                        () -> rollers.setSpeeds(0, 0, 0),
+                        rollers)));
+
     opcon.povUp().whileTrue(intake.extendHopperVelocity());
     opcon.povDown().whileTrue(intake.retractHopperVelocity());
     opcon.rightTrigger().onTrue(intake.extendHopper());
