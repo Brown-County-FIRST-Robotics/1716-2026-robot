@@ -118,7 +118,9 @@ public class Shooter extends SubsystemBase {
     else if (distanceToMidline > 0)
       targetPosition = new Translation2d(isFlipped ? 16.54099 - 2 : 2, 1.5);
     else targetPosition = new Translation2d(isFlipped ? 16.54099 - 2 : 2, 8.069275 - 1.5);
-    Logger.recordOutput("turret/autoAimPos", new Pose2d(targetPosition.getX(), targetPosition.getY(), Rotation2d.kZero));
+    Logger.recordOutput(
+        "turret/autoAimPos",
+        new Pose2d(targetPosition.getX(), targetPosition.getY(), Rotation2d.kZero));
     return targetPosition
         .minus(robot.plus(new Transform2d(-0.2, 0.3, Rotation2d.kZero)).getTranslation())
         .getAngle();
