@@ -18,5 +18,7 @@ public class QuestIOQuest implements QuestIO {
     }
     inputs.connected = qn.isConnected();
     inputs.tracking = qn.isTracking();
+    var bat = qn.getBatteryPercent();
+    inputs.battery = bat.isPresent() ? bat.getAsInt() : -1;
   }
 }

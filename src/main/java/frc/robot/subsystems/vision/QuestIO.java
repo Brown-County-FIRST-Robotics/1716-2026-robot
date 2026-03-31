@@ -9,6 +9,7 @@ public interface QuestIO {
     Pose3d lastPose = new Pose3d();
     boolean connected = false;
     boolean tracking = false;
+    int battery = 0;
   }
 
   default void updateInputs(QuestIOInputs inputs) {}

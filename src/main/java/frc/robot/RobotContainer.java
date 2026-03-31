@@ -113,7 +113,6 @@ public class RobotContainer extends PeriodicRunnable {
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     super();
-    Logger.recordOutput("Time Left", -1);
     quest = new Quest(new QuestIOQuest(new QuestNav()));
     switch (Constants.currentMode) {
       case REAL:
@@ -533,6 +532,7 @@ public class RobotContainer extends PeriodicRunnable {
     if (DriverStation.isDisabled()) {
       currentPhase = "Disabled";
       timeUntilShiftEnd = -1;
+      matchTime = -1;
     } else if (DriverStation.isAutonomous()) {
       currentPhase = "Auto";
       timeUntilShiftEnd = matchTime;
