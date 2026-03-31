@@ -357,17 +357,20 @@ public class RobotContainer extends PeriodicRunnable {
     // Track by default
     shooter.setDefaultCommand(
         Commands.run(
-            () ->
-                shooter.commandTurretToTrack(
-                    drive
-                        .getPose()
-                        .plus(
-                            new Transform2d(
-                                0,
-                                0,
-                                Rotation2d.fromRadians(
-                                    drive.getChassisSpeeds().omegaRadiansPerSecond
-                                        * OurConstants.AIM_LOOKAHEAD)))),
+            () -> {
+              System.out.println("runnin");
+              shooter.commandTurretToTrack(
+                  drive
+                      .getPose()
+                      .plus(
+                          new Transform2d(
+                              0,
+                              0,
+                              Rotation2d.fromRadians(
+                                  drive.getChassisSpeeds().omegaRadiansPerSecond
+                                      * OurConstants.AIM_LOOKAHEAD))));
+              shooter.commandHoodToTrack(drive.getPose());
+            },
             shooter));
 
     // Switch to X pattern when button is pressed
