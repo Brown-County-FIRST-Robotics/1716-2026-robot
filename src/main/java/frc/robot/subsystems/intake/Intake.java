@@ -52,19 +52,19 @@ public class Intake extends SubsystemBase {
   }
 
   public Command extendHopper() {
-    return Commands.run(() -> io.extenderPosition(extendedZeroPosition + 13.45), this);
+    return Commands.runOnce(() -> io.extenderPosition(extendedZeroPosition + 12.75), this);
   }
 
   public Command retractHopper() {
-    return Commands.run(() -> io.extenderPosition(extendedZeroPosition), this);
+    return Commands.runOnce(() -> io.extenderPosition(extendedZeroPosition), this);
   }
 
   public Command extendHopperVelocity() {
-    return Commands.runEnd(() -> io.extenderVelocity(4), () -> io.extenderVelocity(0), this);
+    return Commands.runEnd(() -> io.extenderVelocity(3), () -> io.extenderVelocity(0), this);
   }
 
   public Command retractHopperVelocity() {
-    return Commands.runEnd(() -> io.extenderVelocity(-8), () -> io.extenderVelocity(0), this);
+    return Commands.runEnd(() -> io.extenderVelocity(-15), () -> io.extenderVelocity(0), this);
   }
 
   public Command retractStop() {
