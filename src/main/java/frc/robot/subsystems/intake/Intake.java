@@ -60,11 +60,11 @@ public class Intake extends SubsystemBase {
   }
 
   public Command extendHopperVelocity() {
-    return Commands.runEnd(() -> io.extenderVelocity(4), () -> io.extenderVelocity(0), this);
+    return Commands.runEnd(() -> io.extenderVelocity(3), () -> io.extenderVelocity(0), this);
   }
 
   public Command retractHopperVelocity() {
-    return Commands.runEnd(() -> io.extenderVelocity(-8), () -> io.extenderVelocity(0), this);
+    return Commands.runEnd(() -> io.extenderVelocity(-15), () -> io.extenderVelocity(0), this);
   }
 
   public Command retractStop() {
