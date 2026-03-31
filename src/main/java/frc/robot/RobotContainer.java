@@ -27,7 +27,6 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
-import frc.robot.subsystems.drive.Drive.HoldMode;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
@@ -357,17 +356,21 @@ public class RobotContainer extends PeriodicRunnable {
     // Track by default
     shooter.setDefaultCommand(
         Commands.run(
-            () ->
-                shooter.commandTurretToTrack(
-                    drive
-                        .getPose()
-                        .plus(
-                            new Transform2d(
-                                0,
-                                0,
-                                Rotation2d.fromRadians(
-                                    drive.getChassisSpeeds().omegaRadiansPerSecond
-                                        * OurConstants.AIM_LOOKAHEAD)))),
+            () -> {
+              shooter.commandTurretToTrack(
+                  drive
+                      .getPose()
+                      .plus(
+                          new Transform2d(
+                              0,
+                              0,
+                              Rotation2d.fromRadians(
+                                  drive.getChassisSpeeds().omegaRadiansPerSecond
+                                      * OurConstants.AIM_LOOKAHEAD))));
+              shooter.quickServoCommand(
+                  (controller.a().getAsBoolean() ? -0.01 : 0)
+                      + (controller.b().getAsBoolean() ? 0.01 : 0));
+            },
             shooter));
 
     // Switch to X pattern when button is pressed
@@ -385,10 +388,10 @@ public class RobotContainer extends PeriodicRunnable {
     controller
         .rightTrigger(0.7)
         .whileTrue(
-            Commands.runOnce(
+            Commands.run(
                     () -> {
                       shooter.setShooterSpeed(80);
-                      shooter.quickServoCommand(1);
+                      shooter.commandHoodToTrack(drive.getPose());
                     })
                 .alongWith(
                     Commands.waitSeconds(0.4)
@@ -458,7 +461,7 @@ public class RobotContainer extends PeriodicRunnable {
                         rollers)));
 
     // Rotation snapping
-    controller
+    /*    controller
         .y()
         .onTrue(
             Commands.runOnce(
@@ -505,7 +508,7 @@ public class RobotContainer extends PeriodicRunnable {
                           ? Rotation2d.kCCW_90deg
                           : Rotation2d.kCW_90deg;
                   drive.holdingAngle = HoldMode.HOLD;
-                }));
+                }));*/
 
     shooter.register();
   }
