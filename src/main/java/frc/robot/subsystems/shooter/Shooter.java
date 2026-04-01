@@ -139,12 +139,15 @@ public class Shooter extends SubsystemBase {
 
   public void commandHoodToTrack(Pose2d p2) {
     double distanceToTarget = Units.metersToInches(getTurretTarget(p2).getNorm());
-    double target = distanceToTarget * 0.0095 + 0.165;
+    double target = distanceToTarget * 0.0095 - 0.063;
     /* Collected data on 3/31/26
+    Distance from edge of hub to edge of bumper
       60": 0.73
       50": 0.65
       40": 0.54
     */
+
+    target = Math.max(0, Math.min(2, target));
 
     shooterIO.commandHoodPosition(target);
   }
