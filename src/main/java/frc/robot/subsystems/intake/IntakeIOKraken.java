@@ -10,7 +10,6 @@ import com.ctre.phoenix6.configs.Slot1Configs;
 import com.ctre.phoenix6.configs.Slot2Configs;
 import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
-import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
@@ -106,8 +105,8 @@ public class IntakeIOKraken implements IntakeIO {
   @Override
   public void extenderVelocity(double rps) {
     // Negative rps means retracting
-    if (rps == 0) extendMotor.setControl(new VelocityVoltage(rps).withSlot(2));
-    else if (rps < 0) extendMotor.setControl(new VelocityVoltage(rps).withSlot(0));
-    else extendMotor.setControl(new VelocityVoltage(rps).withSlot(1));
+    // if (rps == 0) extendMotor.setControl(new VelocityVoltage(rps).withSlot(2));
+    // else if (rps < 0) extendMotor.setControl(new VelocityVoltage(rps).withSlot(0));
+    // else extendMotor.setControl(new VelocityVoltage(rps).withSlot(1));
   }
 }
