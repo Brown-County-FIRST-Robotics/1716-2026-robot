@@ -228,6 +228,10 @@ public class DriveCommands {
 
                 targetFieldSpeeds =
                     ChassisSpeeds.fromFieldRelativeSpeeds(targetFieldSpeeds, self.getRotation());
+              } else {
+                drive.holdingAngle = HoldMode.OFF;
+                drive.holdingX = false;
+                drive.holdingY = false;
               }
               drive.runVelocity(targetFieldSpeeds);
             },
