@@ -283,14 +283,14 @@ public class RobotContainer extends PeriodicRunnable {
                 .get()
                 .alongWith(
                     AutoBuilder.followPath(path)
-                        .andThen(shake ? Commands.none() : DriveCommands.shake(drive))));
+                        .andThen(shake ? DriveCommands.shake(drive) : Commands.none())));
         autoChooser.addOption(
             "Choreo - Depot side - " + desc,
             parallel
                 .get()
                 .alongWith(
                     AutoBuilder.followPath(path.mirrorPath())
-                        .andThen(shake ? Commands.none() : DriveCommands.shake(drive))));
+                        .andThen(shake ? DriveCommands.shake(drive) : Commands.none())));
       }
     } catch (FileVersionException | IOException | ParseException e) {
       e.printStackTrace();
@@ -378,7 +378,7 @@ public class RobotContainer extends PeriodicRunnable {
                         () -> false),
                 Set.of(drive)));
 
-    opcon.a().whileTrue(Commands.run(() -> shooter.commandTurret(Rotation2d.k180deg)));
+    opcon.a().whileTrue(Commands.run(() -> shooter.commandTurret(Rotation2d.k180deg), shooter));
 
     // Track by default
     shooter.setDefaultCommand(
@@ -401,6 +401,9 @@ public class RobotContainer extends PeriodicRunnable {
     // Switch to X pattern when button is pressed
     // controller.leftBumper().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
+    // Stop intake when no commands are running
+    intake.setDefaultCommand(intake.intakeStop());
+
     // Reset initial pos on auto init
     RobotModeTriggers.autonomous()
         .onTrue(Commands.runOnce(() -> drive.setPose(FieldConstants.flip(initPosChooser.get()))));
@@ -413,12 +416,9 @@ public class RobotContainer extends PeriodicRunnable {
     controller
         .rightTrigger(0.7)
         .whileTrue(
-            Commands.runOnce(
-                    () -> {
-                      shooter.setShooterSpeed(80);
-                      shooter.quickServoCommand(1);
-                    })
+            Commands.runOnce(() -> shooter.setShooterSpeed(80))
                 .alongWith(DriveCommands.shake(drive))
+                .alongWith(intake.shake())
                 .alongWith(
                     Commands.waitSeconds(0.4)
                         .andThen(Commands.run(() -> rollers.setSpeeds(20, 20, 20), rollers)))
@@ -457,8 +457,8 @@ public class RobotContainer extends PeriodicRunnable {
     opcon.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
 
     // Intake/hopper control
-    controller.povUp().whileTrue(intake.extendHopperVelocity());
-    controller.povDown().whileTrue(intake.retractHopperVelocity());
+    controller.povUp().whileTrue(intake.extendHopperVelocity(3));
+    controller.povDown().whileTrue(intake.retractHopperVelocity(15));
     controller.povRight().onTrue(intake.intake());
     controller
         .povLeft()
