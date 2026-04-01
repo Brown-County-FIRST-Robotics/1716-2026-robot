@@ -10,6 +10,8 @@ package frc.robot;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.util.FileVersionException;
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
@@ -58,11 +60,14 @@ class MirroredAutoInfo {
   public String name;
   public String desc;
   public Supplier<Command> parallelCommand;
+  boolean shakeOnEnd;
 
-  public MirroredAutoInfo(String name, String desc, Supplier<Command> parallelCommand) {
+  public MirroredAutoInfo(
+      String name, String desc, Supplier<Command> parallelCommand, boolean shakeOnEnd) {
     this.name = name;
     this.desc = desc;
     this.parallelCommand = parallelCommand;
+    this.shakeOnEnd = shakeOnEnd;
   }
 
   public static Command generateParallelCommand(
@@ -89,7 +94,8 @@ class MirroredAutoInfo {
                                     .andThen(
                                         Commands.run(() -> rollers.setSpeeds(20, 20, 20), rollers)))
                             .alongWith(
-                                Commands.run(() -> shooter.trackBothToShoot(drive.getPose()))))),
+                                Commands.run(
+                                    () -> shooter.trackBothToShoot(drive.getPose()), shooter)))),
         Commands.waitSeconds(14.5));
   }
 }
@@ -115,9 +121,15 @@ public class RobotContainer extends PeriodicRunnable {
   private final LoggedDashboardChooser<Command> autoChooser;
   private final LoggedDashboardChooser<Pose2d> initPosChooser;
 
+  private final UsbCamera camera;
+
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     super();
+
+    camera = CameraServer.startAutomaticCapture();
+    camera.setResolution(320, 200);
+    camera.setFPS(30);
     quest = new Quest(new QuestIOQuest(new QuestNav()));
     switch (Constants.currentMode) {
       case REAL:
@@ -243,22 +255,18 @@ public class RobotContainer extends PeriodicRunnable {
         new MirroredAutoInfo(
             "FuelToucher",
             "FULL FIELD - Push balls to side -> end on same trench",
-            () -> Commands.none()),
+            () -> Commands.none(),
+            false),
         new MirroredAutoInfo(
             "FuelCollectorHalf",
             "HALF FIELD - Push balls to side -> end on same trench",
-            () -> Commands.none()),
-        new MirroredAutoInfo(
-            "FuelToucher",
-            "FULL FIELD - ADVANCED - End on same trench",
-            () ->
-                MirroredAutoInfo.generateParallelCommand(
-                    drive, intake, shooter, rollers, 0.5, 7.5)),
+            () -> Commands.none(),
+            false),
         new MirroredAutoInfo(
             "FuelCollectorHalf",
             "HALF FIELD - ADVANCED - End on same trench",
-            () ->
-                MirroredAutoInfo.generateParallelCommand(drive, intake, shooter, rollers, 0.2, 7.5))
+            () -> MirroredAutoInfo.generateParallelCommand(drive, intake, shooter, rollers, 0.2, 9),
+            true)
         // Add more here here
       };
 
@@ -266,14 +274,23 @@ public class RobotContainer extends PeriodicRunnable {
         String name = item.name;
         String desc = item.desc;
         Supplier<Command> parallel = item.parallelCommand;
+        boolean shake = item.shakeOnEnd;
 
         PathPlannerPath path = PathPlannerPath.fromChoreoTrajectory(name);
         autoChooser.addOption(
             "Choreo - Human player side - " + desc,
-            AutoBuilder.followPath(path).alongWith(parallel.get()));
+            parallel
+                .get()
+                .alongWith(
+                    AutoBuilder.followPath(path)
+                        .andThen(shake ? Commands.none() : DriveCommands.shake(drive))));
         autoChooser.addOption(
             "Choreo - Depot side - " + desc,
-            AutoBuilder.followPath(path.mirrorPath()).alongWith(parallel.get()));
+            parallel
+                .get()
+                .alongWith(
+                    AutoBuilder.followPath(path.mirrorPath())
+                        .andThen(shake ? Commands.none() : DriveCommands.shake(drive))));
       }
     } catch (FileVersionException | IOException | ParseException e) {
       e.printStackTrace();
@@ -301,7 +318,9 @@ public class RobotContainer extends PeriodicRunnable {
             false,
             () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             false,
-            opcon.a(),
+            () -> {
+              return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
+            },
             () -> false));
 
     controller
@@ -326,7 +345,9 @@ public class RobotContainer extends PeriodicRunnable {
                           return r > 0 ? 0 : Math.PI;
                         },
                         true,
-                        opcon.a(),
+                        () -> {
+                          return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
+                        },
                         () -> false),
                 Set.of(drive)));
     controller
@@ -351,7 +372,9 @@ public class RobotContainer extends PeriodicRunnable {
                           return r > 0 ? 0 : Math.PI;
                         },
                         true,
-                        opcon.a(),
+                        () -> {
+                          return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
+                        },
                         () -> false),
                 Set.of(drive)));
 
@@ -395,6 +418,7 @@ public class RobotContainer extends PeriodicRunnable {
                       shooter.setShooterSpeed(80);
                       shooter.quickServoCommand(1);
                     })
+                .alongWith(DriveCommands.shake(drive))
                 .alongWith(
                     Commands.waitSeconds(0.4)
                         .andThen(Commands.run(() -> rollers.setSpeeds(20, 20, 20), rollers)))
@@ -447,21 +471,21 @@ public class RobotContainer extends PeriodicRunnable {
                         () -> rollers.setSpeeds(0, 0, 0),
                         rollers)));
 
-    opcon.povUp().whileTrue(intake.extendHopperVelocity());
-    opcon.povDown().whileTrue(intake.retractHopperVelocity());
-    opcon.rightTrigger().onTrue(intake.extendHopper());
-    opcon.leftTrigger().onTrue(intake.retractHopper());
-    opcon.rightBumper().whileTrue(intake.intake());
-    opcon
-        .leftBumper()
-        .whileTrue(
-            intake
-                .intakeReverse()
-                .alongWith(
-                    Commands.runEnd(
-                        () -> rollers.setSpeeds(20, -20, 0),
-                        () -> rollers.setSpeeds(0, 0, 0),
-                        rollers)));
+    // opcon.povUp().whileTrue(intake.extendHopperVelocity());
+    // opcon.povDown().whileTrue(intake.retractHopperVelocity());
+    // opcon.rightTrigger().onTrue(intake.extendHopper());
+    // opcon.leftTrigger().onTrue(intake.retractHopper());
+    // opcon.rightBumper().whileTrue(intake.intake());
+    // opcon
+    //     .leftBumper()
+    //     .whileTrue(
+    //         intake
+    //             .intakeReverse()
+    //             .alongWith(
+    //                 Commands.runEnd(
+    //                     () -> rollers.setSpeeds(20, -20, 0),
+    //                     () -> rollers.setSpeeds(0, 0, 0),
+    //                     rollers)));
 
     // Rotation snapping
     controller
