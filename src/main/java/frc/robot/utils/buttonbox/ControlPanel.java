@@ -8,44 +8,44 @@ public class ControlPanel extends ButtonBoxPanel {
   }
 
   public Trigger questDown() {
-    return new Trigger(() -> getButton(0));
-  }
-
-  public Trigger kidModeOn() {
-    return new Trigger(() -> getButton(1));
-  }
-
-  public Trigger hopperOut() { // extend the hopper
-    return new Trigger(() -> getButton(2));
-  }
-
-  public Trigger hopperIn() { // retract the hopper
-    return new Trigger(() -> getButton(3));
-  }
-
-  public Trigger intakeForward() { // intake into the robot
     return new Trigger(() -> getButton(4));
   }
 
-  public Trigger intakeReverse() { // spit balls out
-    return new Trigger(() -> getButton(5));
+  public Trigger kidModeOn() {
+    return new Trigger(() -> getButton(0));
   }
 
-  public Trigger intakeStop() {
+  public Trigger hopperOut() { // extend the hopper
     return new Trigger(() -> getButton(6));
   }
 
-  public Trigger autoAlignTrenchLeft() {
+  public Trigger hopperIn() { // retract the hopper
+    return new Trigger(() -> getButton(5));
+  }
+
+  public Trigger intakeForward() { // intake into the robot
     return new Trigger(() -> getButton(7));
   }
 
-  public Trigger autoAlignTrenchRight() {
+  public Trigger intakeReverse() { // spit balls out
     return new Trigger(() -> getButton(8));
   }
 
-  public Trigger turretAutoAimOn() {
-    return new Trigger(() -> getButton(9));
+  // public Trigger intakeStop() {
+  //   return new Trigger(() -> getButton(6));
+  // }
+
+  public Trigger autoAlignTrenchLeft() {
+    return new Trigger(() -> getButton(2));
   }
+
+  public Trigger autoAlignTrenchRight() {
+    return new Trigger(() -> getButton(3));
+  }
+
+  // public Trigger turretAutoAimOn() {
+  //   return new Trigger(() -> getButton(9));
+  // }
 
   public Trigger hoodSafePosition() {
     return new Trigger(() -> getButton(10));
