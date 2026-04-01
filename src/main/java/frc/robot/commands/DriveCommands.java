@@ -52,9 +52,8 @@ public class DriveCommands {
   private static final double LOOKAHEAD_Y = 0.05;
   private static final double LOOKAHEAD_Z = 0.05;
 
-  private static final double SHAKE_AMPLITUDE = 1.0; // m/s
-  private static final double SHAKE_FREQUENCY = 1.4; // hz
-  private static final double SHAKE_MAX_ACCEL = 5.0; // m/s^2
+  private static final double SHAKE_AMPLITUDE = 0.2; // m/s
+  private static final double SHAKE_FREQUENCY = 0.1; // hz
 
   private DriveCommands() {}
 
@@ -74,21 +73,18 @@ public class DriveCommands {
 
   public static Command shake(Drive drive) {
     Timer shakeTimer = new Timer();
-    SlewRateLimiter shakeLimiter = new SlewRateLimiter(SHAKE_MAX_ACCEL);
 
     return Commands.run(
             () -> {
-              double rawVy =
-                  SHAKE_AMPLITUDE * Math.sin(2.0 * Math.PI * SHAKE_FREQUENCY * shakeTimer.get());
               ChassisSpeeds target = new ChassisSpeeds();
-              target.vyMetersPerSecond = shakeLimiter.calculate(rawVy);
+              target.vyMetersPerSecond =
+                  SHAKE_AMPLITUDE * Math.sin(2.0 * Math.PI * SHAKE_FREQUENCY * shakeTimer.get());
               drive.runVelocity(target);
             },
             drive)
         .beforeStarting(
             () -> {
               shakeTimer.restart();
-              shakeLimiter.reset(drive.getChassisSpeeds().vyMetersPerSecond);
             });
   }
 
