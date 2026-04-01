@@ -10,6 +10,8 @@ package frc.robot;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.util.FileVersionException;
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
@@ -89,7 +91,8 @@ class MirroredAutoInfo {
                                     .andThen(
                                         Commands.run(() -> rollers.setSpeeds(20, 20, 20), rollers)))
                             .alongWith(
-                                Commands.run(() -> shooter.trackBothToShoot(drive.getPose()))))),
+                                Commands.run(
+                                    () -> shooter.trackBothToShoot(drive.getPose()), shooter)))),
         Commands.waitSeconds(14.5));
   }
 }
@@ -115,9 +118,15 @@ public class RobotContainer extends PeriodicRunnable {
   private final LoggedDashboardChooser<Command> autoChooser;
   private final LoggedDashboardChooser<Pose2d> initPosChooser;
 
+  private final UsbCamera camera;
+
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     super();
+
+    camera = CameraServer.startAutomaticCapture();
+    camera.setResolution(320, 200);
+    camera.setFPS(30);
     quest = new Quest(new QuestIOQuest(new QuestNav()));
     switch (Constants.currentMode) {
       case REAL:
@@ -257,8 +266,7 @@ public class RobotContainer extends PeriodicRunnable {
         new MirroredAutoInfo(
             "FuelCollectorHalf",
             "HALF FIELD - ADVANCED - End on same trench",
-            () ->
-                MirroredAutoInfo.generateParallelCommand(drive, intake, shooter, rollers, 0.2, 7.5))
+            () -> MirroredAutoInfo.generateParallelCommand(drive, intake, shooter, rollers, 0.2, 9))
         // Add more here here
       };
 
@@ -301,7 +309,9 @@ public class RobotContainer extends PeriodicRunnable {
             false,
             () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             false,
-            opcon.a(),
+            () -> {
+              return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
+            },
             () -> false));
 
     controller
@@ -326,7 +336,9 @@ public class RobotContainer extends PeriodicRunnable {
                           return r > 0 ? 0 : Math.PI;
                         },
                         true,
-                        opcon.a(),
+                        () -> {
+                          return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
+                        },
                         () -> false),
                 Set.of(drive)));
     controller
@@ -351,7 +363,9 @@ public class RobotContainer extends PeriodicRunnable {
                           return r > 0 ? 0 : Math.PI;
                         },
                         true,
-                        opcon.a(),
+                        () -> {
+                          return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
+                        },
                         () -> false),
                 Set.of(drive)));
 
@@ -395,6 +409,7 @@ public class RobotContainer extends PeriodicRunnable {
                       shooter.setShooterSpeed(80);
                       shooter.quickServoCommand(1);
                     })
+                .alongWith(DriveCommands.shake(drive))
                 .alongWith(
                     Commands.waitSeconds(0.4)
                         .andThen(Commands.run(() -> rollers.setSpeeds(20, 20, 20), rollers)))
@@ -447,21 +462,21 @@ public class RobotContainer extends PeriodicRunnable {
                         () -> rollers.setSpeeds(0, 0, 0),
                         rollers)));
 
-    opcon.povUp().whileTrue(intake.extendHopperVelocity());
-    opcon.povDown().whileTrue(intake.retractHopperVelocity());
-    opcon.rightTrigger().onTrue(intake.extendHopper());
-    opcon.leftTrigger().onTrue(intake.retractHopper());
-    opcon.rightBumper().whileTrue(intake.intake());
-    opcon
-        .leftBumper()
-        .whileTrue(
-            intake
-                .intakeReverse()
-                .alongWith(
-                    Commands.runEnd(
-                        () -> rollers.setSpeeds(20, -20, 0),
-                        () -> rollers.setSpeeds(0, 0, 0),
-                        rollers)));
+    // opcon.povUp().whileTrue(intake.extendHopperVelocity());
+    // opcon.povDown().whileTrue(intake.retractHopperVelocity());
+    // opcon.rightTrigger().onTrue(intake.extendHopper());
+    // opcon.leftTrigger().onTrue(intake.retractHopper());
+    // opcon.rightBumper().whileTrue(intake.intake());
+    // opcon
+    //     .leftBumper()
+    //     .whileTrue(
+    //         intake
+    //             .intakeReverse()
+    //             .alongWith(
+    //                 Commands.runEnd(
+    //                     () -> rollers.setSpeeds(20, -20, 0),
+    //                     () -> rollers.setSpeeds(0, 0, 0),
+    //                     rollers)));
 
     // Rotation snapping
     controller
