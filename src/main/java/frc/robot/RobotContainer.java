@@ -48,6 +48,8 @@ import frc.robot.subsystems.shooter.TurretIOKrakens;
 import frc.robot.subsystems.vision.Quest;
 import frc.robot.subsystems.vision.QuestIOQuest;
 import frc.robot.utils.PeriodicRunnable;
+import frc.robot.utils.buttonbox.ButtonBox;
+import frc.robot.utils.buttonbox.ControlPanel;
 import gg.questnav.questnav.QuestNav;
 import java.io.IOException;
 import java.util.Set;
@@ -116,7 +118,8 @@ public class RobotContainer extends PeriodicRunnable {
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
   private final CommandXboxController opcon = new CommandXboxController(1);
-
+  private ButtonBox buttonBox = new ButtonBox(2);
+  private ControlPanel controlPanel = new ControlPanel(buttonBox);
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
   private final LoggedDashboardChooser<Pose2d> initPosChooser;
@@ -319,7 +322,7 @@ public class RobotContainer extends PeriodicRunnable {
             () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             false,
             () -> {
-              return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
+              return controlPanel.questDown().getAsBoolean() || controller.rightStick().getAsBoolean();
             },
             () -> false));
 
@@ -378,7 +381,9 @@ public class RobotContainer extends PeriodicRunnable {
                         () -> false),
                 Set.of(drive)));
 
-    opcon.a().whileTrue(Commands.run(() -> shooter.commandTurret(Rotation2d.k180deg)));
+    controlPanel
+        .questDown()
+        .whileTrue(Commands.run(() -> shooter.commandTurret(Rotation2d.k180deg)));
 
     // Track by default
     shooter.setDefaultCommand(
@@ -437,31 +442,24 @@ public class RobotContainer extends PeriodicRunnable {
                       controller.setRumble(RumbleType.kBothRumble, 0);
                     }));
 
-    opcon
-        .povLeft()
-        .onTrue(
-            Commands.runOnce(
-                () ->
-                    shooter.commandTurret(
-                        shooter.getTurretRotation().plus(Rotation2d.fromRotations(0.1)))));
-    opcon
-        .povRight()
-        .onTrue(
-            Commands.runOnce(
-                () ->
-                    shooter.commandTurret(
-                        shooter.getTurretRotation().plus(Rotation2d.fromRotations(-0.1)))));
-
     // Hood positions
-    opcon.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
-    opcon.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
+    // controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
+    // controller.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
+    controlPanel
+        .hoodSafePosition()
+        .whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
+    controlPanel
+        .hoodShootPosition()
+        .whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
 
     // Intake/hopper control
-    controller.povUp().whileTrue(intake.extendHopperVelocity());
-    controller.povDown().whileTrue(intake.retractHopperVelocity());
-    controller.povRight().onTrue(intake.intake());
-    controller
-        .povLeft()
+    controlPanel.hopperOut().whileTrue(intake.extendHopperVelocity());
+    controlPanel.hopperIn().whileTrue(intake.retractHopperVelocity());
+    // opcon.rightTrigger().onTrue(intake.extendHopper());
+    // opcon.leftTrigger().onTrue(intake.retractHopper());
+    controlPanel.intakeForward().whileTrue(intake.intake());
+    controlPanel
+        .intakeReverse()
         .whileTrue(
             intake
                 .intakeReverse()
