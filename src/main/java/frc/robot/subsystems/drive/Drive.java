@@ -230,6 +230,11 @@ public class Drive extends SubsystemBase {
     // Update gyro alert
     gyroDisconnectedAlert.set(!gyroInputs.connected && Constants.currentMode != Mode.SIM);
 
+    // Reset the odometry to match the quest if it is connected
+    if (quest.trust())
+      poseEstimator.resetPosition(
+          quest.getPose().getRotation(), getModulePositions(), quest.getPose());
+
     // 2d field updates
     field.setRobotPose(getPose());
     SmartDashboard.putData("Field", field);

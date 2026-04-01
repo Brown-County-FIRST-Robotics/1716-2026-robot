@@ -134,6 +134,11 @@ public class DriveCommands {
               double y = ySupplier.getAsDouble();
               double omega = omegaSupplier.getAsDouble();
 
+              // Refresh values every run
+              if (useAsSetAngle) drive.targetAngle = Rotation2d.fromRadians(omega);
+              if (useAsSetPosX) drive.targetX = x;
+              if (useAsSetPosY) drive.targetY = y;
+
               x = MathUtil.applyDeadband(x, DEADBAND);
               y = MathUtil.applyDeadband(y, DEADBAND);
               omega = MathUtil.applyDeadband(omega, DEADBAND);
@@ -228,6 +233,10 @@ public class DriveCommands {
 
                 targetFieldSpeeds =
                     ChassisSpeeds.fromFieldRelativeSpeeds(targetFieldSpeeds, self.getRotation());
+              } else {
+                drive.holdingAngle = HoldMode.OFF;
+                drive.holdingX = false;
+                drive.holdingY = false;
               }
               drive.runVelocity(targetFieldSpeeds);
             },
