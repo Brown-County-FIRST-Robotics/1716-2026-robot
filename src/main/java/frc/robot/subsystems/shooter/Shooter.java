@@ -6,6 +6,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
@@ -132,19 +133,28 @@ public class Shooter extends SubsystemBase {
     commandTurret(correctRotation);
   }
 
-  public void trackBothToShoot(Pose2d p2) {
+  public void trackBothToShoot(Pose2d p2, ChassisSpeeds speeds) {
+    double distanceToTarget = getTurretTarget(p2).getNorm();
+    double airTime = distanceToTarget / 6;
+    p2 = p2.exp(speeds.toTwist2d(airTime));
+
+    Logger.recordOutput("turret/autoAimRobotPosVelocityAdjusted", p2);
+
     commandTurretToTrack(p2);
     commandHoodToTrack(p2);
   }
 
   public void commandHoodToTrack(Pose2d p2) {
     double distanceToTarget = Units.metersToInches(getTurretTarget(p2).getNorm());
-    double target = distanceToTarget * 0.0095 + 0.165;
+    double target = distanceToTarget * 0.0095 + 0.063;
     /* Collected data on 3/31/26
+    Distance from edge of hub to edge of bumper
       60": 0.73
       50": 0.65
       40": 0.54
     */
+
+    target = Math.max(0, Math.min(2, target));
 
     shooterIO.commandHoodPosition(target);
   }
