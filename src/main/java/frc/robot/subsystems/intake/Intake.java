@@ -2,6 +2,7 @@ package frc.robot.subsystems.intake;
 
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -40,15 +41,43 @@ public class Intake extends SubsystemBase {
   }
 
   public Command intake() {
-    return Commands.runEnd(() -> io.intakeSpeed(60), () -> io.intakeSpeed(0), this);
+    return Commands.run(() -> io.intakeSpeed(60), this);
   }
 
   public Command intakeReverse() {
-    return Commands.runEnd(() -> io.intakeSpeed(-40), () -> io.intakeSpeed(0), this);
+    return Commands.run(() -> io.intakeSpeed(-40), this);
   }
 
   public Command intakeStop() {
     return Commands.run(() -> io.intakeSpeed(0), this);
+  }
+
+  public Command shake() {
+    Timer time = new Timer();
+    boolean[] isMovingIn = {true};
+    return Commands.runEnd(
+            () -> {
+              if (isMovingIn[0]) {
+                io.extenderCurrent(-25);
+                if (time.hasElapsed(1.25)) {
+                  isMovingIn[0] = false;
+                  time.restart();
+                }
+              } else {
+                io.extenderVelocity(3);
+                if (time.hasElapsed(1)) {
+                  isMovingIn[0] = true;
+                  time.restart();
+                }
+              }
+            },
+            () -> io.extenderVelocity(0),
+            this)
+        .beforeStarting(
+            () -> {
+              isMovingIn[0] = true;
+              time.restart();
+            });
   }
 
   public Command extendHopper() {
@@ -59,12 +88,12 @@ public class Intake extends SubsystemBase {
     return Commands.runOnce(() -> io.extenderPosition(extendedZeroPosition), this);
   }
 
-  public Command extendHopperVelocity() {
-    return Commands.runEnd(() -> io.extenderVelocity(3), () -> io.extenderVelocity(0), this);
+  public Command extendHopperVelocity(double speed) {
+    return Commands.runEnd(() -> io.extenderVelocity(speed), () -> io.extenderVelocity(0), this);
   }
 
-  public Command retractHopperVelocity() {
-    return Commands.runEnd(() -> io.extenderVelocity(-15), () -> io.extenderVelocity(0), this);
+  public Command retractHopperVelocity(double speed) {
+    return Commands.runEnd(() -> io.extenderVelocity(-speed), () -> io.extenderVelocity(0), this);
   }
 
   public Command retractStop() {

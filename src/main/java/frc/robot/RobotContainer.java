@@ -15,6 +15,8 @@ import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.GenericHID;
@@ -79,26 +81,50 @@ class MirroredAutoInfo {
       Rollers rollers,
       double intakeWaitSeconds,
       double shootWaitSeconds) {
+    assert (shootWaitSeconds - intakeWaitSeconds - 1 > 0);
     return Commands.race(
-        Commands.waitSeconds(intakeWaitSeconds)
-            .andThen(
-                intake
-                    .extendHopper()
-                    .andThen(intake.intake().withTimeout(shootWaitSeconds - intakeWaitSeconds))
-                    .andThen(
-                        Commands.runOnce(
-                                () -> {
-                                  shooter.setShooterSpeed(80);
-                                  shooter.quickServoCommand(1);
-                                })
-                            .andThen(
-                                Commands.waitSeconds(0.4)
-                                    .andThen(
-                                        Commands.run(() -> rollers.setSpeeds(20, 20, 20), rollers)))
-                            .alongWith(
-                                Commands.run(
-                                    () -> shooter.trackBothToShoot(drive.getPose()), shooter)))),
-        Commands.waitSeconds(14.5));
+            Commands.waitSeconds(intakeWaitSeconds)
+                .andThen(
+                    intake
+                        .extendHopper()
+                        .andThen(Commands.waitSeconds(1.0))
+                        .andThen(
+                            intake.intake().withTimeout(shootWaitSeconds - intakeWaitSeconds - 1))
+                        .andThen(
+                            Commands.runOnce(
+                                    () -> {
+                                      shooter.setShooterSpeed(80);
+                                      shooter.quickServoCommand(1);
+                                    })
+                                .andThen(
+                                    Commands.waitSeconds(0.4)
+                                        .andThen(
+                                            Commands.run(
+                                                () -> rollers.setSpeeds(20, 20, 20), rollers)))
+                                .alongWith(
+                                    Commands.run(
+                                        () ->
+                                            shooter.trackBothToShoot(
+                                                drive.getPose(),
+                                                ChassisSpeeds.fromRobotRelativeSpeeds(
+                                                    drive.getChassisSpeeds(), drive.getRotation())),
+                                        shooter))
+                                .alongWith(intake.shake()))),
+            Commands.waitSeconds(14.9))
+        .beforeStarting(
+            () -> {
+              shooter.setShooterSpeed(0);
+              shooter.quickServoCommand(0);
+              rollers.setSpeeds(0, 0, 0);
+              intake.setSpeeds(0, 0);
+            })
+        .finallyDo(
+            () -> {
+              shooter.setShooterSpeed(0);
+              shooter.quickServoCommand(0);
+              rollers.setSpeeds(0, 0, 0);
+              intake.setSpeeds(0, 0);
+            });
   }
 }
 
@@ -219,7 +245,11 @@ public class RobotContainer extends PeriodicRunnable {
         "Red - Depot - Trench",
         new Pose2d(3.638606071472168, 1.1230977773666382, Rotation2d.kZero));
     initPosChooser.addOption(
-        "Centered on Hub", new Pose2d(3.638606071472168, 4.050412178039551, Rotation2d.kZero));
+        "Centered on Hub, intake toward hub",
+        new Pose2d(3.638606071472168, 4.050412178039551, Rotation2d.kZero));
+    initPosChooser.addOption(
+        "Centered on Hub intake toward drivers",
+        new Pose2d(3.638606071472168, 4.050412178039551, Rotation2d.k180deg));
 
     // Set up auto routines
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
@@ -268,7 +298,8 @@ public class RobotContainer extends PeriodicRunnable {
         new MirroredAutoInfo(
             "FuelCollectorHalf",
             "HALF FIELD - ADVANCED - End on same trench",
-            () -> MirroredAutoInfo.generateParallelCommand(drive, intake, shooter, rollers, 0.2, 9),
+            () ->
+                MirroredAutoInfo.generateParallelCommand(drive, intake, shooter, rollers, 0.2, 7.5),
             true)
         // Add more here here
       };
@@ -286,14 +317,14 @@ public class RobotContainer extends PeriodicRunnable {
                 .get()
                 .alongWith(
                     AutoBuilder.followPath(path)
-                        .andThen(shake ? Commands.none() : DriveCommands.shake(drive))));
+                        .andThen(shake ? DriveCommands.shake(drive) : Commands.none())));
         autoChooser.addOption(
             "Choreo - Depot side - " + desc,
             parallel
                 .get()
                 .alongWith(
                     AutoBuilder.followPath(path.mirrorPath())
-                        .andThen(shake ? Commands.none() : DriveCommands.shake(drive))));
+                        .andThen(shake ? DriveCommands.shake(drive) : Commands.none())));
       }
     } catch (FileVersionException | IOException | ParseException e) {
       e.printStackTrace();
@@ -322,9 +353,34 @@ public class RobotContainer extends PeriodicRunnable {
             () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
             false,
             () -> {
-              return controlPanel.questDown().getAsBoolean() || controller.rightStick().getAsBoolean();
+              return controlPanel.questDown().getAsBoolean()
+                  || controller.leftStick().getAsBoolean();
             },
             () -> false));
+
+    controller
+        .rightStick()
+        .whileTrue(
+            DriveCommands.joystickDrive(
+                drive,
+                () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+                false,
+                () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+                false,
+                () -> {
+                  var speeds =
+                      ChassisSpeeds.fromRobotRelativeSpeeds(
+                          drive.getChassisSpeeds(), drive.getRotation());
+                  double dx = speeds.vxMetersPerSecond;
+                  double dy = speeds.vyMetersPerSecond;
+                  return new Translation2d(dx, dy).getAngle().getRadians();
+                },
+                true,
+                () -> {
+                  return controlPanel.questDown().getAsBoolean()
+                      || controller.leftStick().getAsBoolean();
+                },
+                () -> false));
 
     controller
         .leftBumper()
@@ -349,7 +405,7 @@ public class RobotContainer extends PeriodicRunnable {
                         },
                         true,
                         () -> {
-                          return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
+                          return opcon.a().getAsBoolean() || controller.leftStick().getAsBoolean();
                         },
                         () -> false),
                 Set.of(drive)));
@@ -376,14 +432,14 @@ public class RobotContainer extends PeriodicRunnable {
                         },
                         true,
                         () -> {
-                          return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
+                          return opcon.a().getAsBoolean() || controller.leftStick().getAsBoolean();
                         },
                         () -> false),
                 Set.of(drive)));
 
     controlPanel
         .questDown()
-        .whileTrue(Commands.run(() -> shooter.commandTurret(Rotation2d.k180deg)));
+        .whileTrue(Commands.run(() -> shooter.commandTurret(Rotation2d.k180deg), shooter));
 
     // Track by default
     shooter.setDefaultCommand(
@@ -406,6 +462,9 @@ public class RobotContainer extends PeriodicRunnable {
     // Switch to X pattern when button is pressed
     // controller.leftBumper().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
+    // Stop intake when no commands are running
+    intake.setDefaultCommand(intake.intakeStop());
+
     // Reset initial pos on auto init
     RobotModeTriggers.autonomous()
         .onTrue(Commands.runOnce(() -> drive.setPose(FieldConstants.flip(initPosChooser.get()))));
@@ -414,6 +473,12 @@ public class RobotContainer extends PeriodicRunnable {
 
     new Trigger(intake::isExtenderConnected).onTrue(Commands.runOnce(intake::setZeroPosition));
     RobotModeTriggers.autonomous().onTrue(Commands.runOnce(intake::setZeroPosition));
+
+    new Trigger(quest::trust)
+        .onFalse(
+            Commands.run(() -> controller.setRumble(RumbleType.kLeftRumble, 1))
+                .andThen(Commands.waitSeconds(0.1))
+                .andThen(() -> controller.setRumble(RumbleType.kBothRumble, 0)));
     // Press right trigger to run shooter startup
     controller
         .rightTrigger(0.7)
@@ -421,19 +486,27 @@ public class RobotContainer extends PeriodicRunnable {
             Commands.runOnce(
                     () -> {
                       shooter.setShooterSpeed(80);
-                      shooter.quickServoCommand(1);
+                      rollers.setSpeeds(0, 0, -20);
                     })
                 .alongWith(DriveCommands.shake(drive))
+                .alongWith(intake.shake())
                 .alongWith(
                     Commands.waitSeconds(0.4)
-                        .andThen(Commands.run(() -> rollers.setSpeeds(20, 20, 20), rollers)))
+                        .andThen(Commands.run(() -> rollers.setSpeeds(40, 20, 20), rollers)))
                 .alongWith(
                     Commands.race(
                             Commands.run(() -> controller.setRumble(RumbleType.kRightRumble, 0.5)),
                             Commands.waitSeconds(0.375))
                         .andThen(
                             Commands.run(() -> controller.setRumble(RumbleType.kBothRumble, 1.0))))
-                .alongWith(Commands.run(() -> shooter.trackBothToShoot(drive.getPose()), shooter))
+                .alongWith(
+                    Commands.run(
+                        () ->
+                            shooter.trackBothToShoot(
+                                drive.getPose(),
+                                ChassisSpeeds.fromRobotRelativeSpeeds(
+                                    drive.getChassisSpeeds(), drive.getRotation())),
+                        shooter))
                 .finallyDo(
                     () -> {
                       shooter.quickWheelCommand(0);
@@ -453,13 +526,27 @@ public class RobotContainer extends PeriodicRunnable {
         .whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
 
     // Intake/hopper control
-    controlPanel.hopperOut().whileTrue(intake.extendHopperVelocity());
-    controlPanel.hopperIn().whileTrue(intake.retractHopperVelocity());
+    controlPanel.hopperOut().whileTrue(intake.extendHopperVelocity(3));
+    controlPanel.hopperIn().whileTrue(intake.retractHopperVelocity(15));
     // opcon.rightTrigger().onTrue(intake.extendHopper());
     // opcon.leftTrigger().onTrue(intake.retractHopper());
     controlPanel.intakeForward().whileTrue(intake.intake());
     controlPanel
         .intakeReverse()
+        .whileTrue(
+            intake
+                .intakeReverse()
+                .alongWith(
+                    Commands.runEnd(
+                        () -> rollers.setSpeeds(20, -20, 0),
+                        () -> rollers.setSpeeds(0, 0, 0),
+                        rollers)));
+
+    controller.povUp().whileTrue(intake.extendHopperVelocity(3));
+    controller.povDown().whileTrue(intake.retractHopperVelocity(15));
+    controller.povRight().onTrue(intake.intake());
+    controller
+        .povLeft()
         .whileTrue(
             intake
                 .intakeReverse()
