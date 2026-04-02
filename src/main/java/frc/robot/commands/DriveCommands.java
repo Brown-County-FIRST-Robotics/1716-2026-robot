@@ -72,20 +72,7 @@ public class DriveCommands {
   }
 
   public static Command shake(Drive drive) {
-    Timer shakeTimer = new Timer();
-
-    return Commands.run(
-            () -> {
-              ChassisSpeeds target = new ChassisSpeeds();
-              target.vyMetersPerSecond =
-                  SHAKE_AMPLITUDE * Math.sin(2.0 * Math.PI * SHAKE_FREQUENCY * shakeTimer.get());
-              drive.runVelocity(target);
-            },
-            drive)
-        .beforeStarting(
-            () -> {
-              shakeTimer.restart();
-            });
+    return Commands.runEnd(() -> drive.shake = true, () -> drive.shake = false);
   }
 
   /**
@@ -128,11 +115,18 @@ public class DriveCommands {
     distanceControllerX.setTolerance(0.02);
     distanceControllerY.setTolerance(0.02);
 
+    Timer timer = new Timer();
+
     return Commands.run(
             () -> {
               double x = xSupplier.getAsDouble();
               double y = ySupplier.getAsDouble();
               double omega = omegaSupplier.getAsDouble();
+
+              // Refresh values every run
+              if (useAsSetAngle) drive.targetAngle = Rotation2d.fromRadians(omega);
+              if (useAsSetPosX) drive.targetX = x;
+              if (useAsSetPosY) drive.targetY = y;
 
               x = MathUtil.applyDeadband(x, DEADBAND);
               y = MathUtil.applyDeadband(y, DEADBAND);
@@ -228,7 +222,16 @@ public class DriveCommands {
 
                 targetFieldSpeeds =
                     ChassisSpeeds.fromFieldRelativeSpeeds(targetFieldSpeeds, self.getRotation());
+              } else {
+                drive.holdingAngle = HoldMode.OFF;
+                drive.holdingX = false;
+                drive.holdingY = false;
               }
+
+              if (drive.shake)
+                targetFieldSpeeds.vyMetersPerSecond +=
+                    SHAKE_AMPLITUDE * Math.sin(2.0 * Math.PI * SHAKE_FREQUENCY * timer.get());
+
               drive.runVelocity(targetFieldSpeeds);
             },
             drive)
@@ -244,6 +247,7 @@ public class DriveCommands {
               distanceControllerY.reset(drive.getPose().getY(), currentSpeeds.vyMetersPerSecond);
 
               drive.resetHold();
+              timer.restart();
             });
   }
 
