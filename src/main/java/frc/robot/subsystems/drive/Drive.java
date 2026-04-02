@@ -87,12 +87,14 @@ public class Drive extends SubsystemBase {
 
   static final Lock odometryLock = new ReentrantLock();
 
-  public HoldMode holdingAngle;
-  public boolean holdingX;
-  public boolean holdingY;
+  public HoldMode holdingAngle = HoldMode.OFF;
+  public boolean holdingX = false;
+  public boolean holdingY = false;
   public Rotation2d targetAngle;
   public double targetX;
   public double targetY;
+
+  public boolean shake = false;
 
   public final Quest quest;
 
@@ -229,6 +231,11 @@ public class Drive extends SubsystemBase {
 
     // Update gyro alert
     gyroDisconnectedAlert.set(!gyroInputs.connected && Constants.currentMode != Mode.SIM);
+
+    // Reset the odometry to match the quest if it is connected
+    if (quest.trust())
+      poseEstimator.resetPosition(
+          quest.getPose().getRotation(), getModulePositions(), quest.getPose());
 
     // 2d field updates
     field.setRobotPose(getPose());
