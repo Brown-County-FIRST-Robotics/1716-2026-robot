@@ -58,7 +58,7 @@ public class Intake extends SubsystemBase {
     return Commands.runEnd(
             () -> {
               if (isMovingIn[0]) {
-                io.extenderCurrent(-25);
+                io.extenderVelocity(-5);
                 if (time.hasElapsed(1.25)) {
                   isMovingIn[0] = false;
                   time.restart();
