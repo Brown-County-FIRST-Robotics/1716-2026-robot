@@ -11,7 +11,7 @@ public class ControlPanel extends ButtonBoxPanel {
     return new Trigger(() -> getButton(4));
   }
 
-  public Trigger kidModeOn() {
+  public Trigger shakeIntake() {
     return new Trigger(() -> getButton(0));
   }
 

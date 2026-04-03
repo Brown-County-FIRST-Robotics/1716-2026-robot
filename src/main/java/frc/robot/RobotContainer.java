@@ -489,7 +489,7 @@ public class RobotContainer extends PeriodicRunnable {
                       rollers.setSpeeds(0, 0, -20);
                     })
                 .alongWith(DriveCommands.shake(drive))
-                .alongWith(intake.shake())
+                .alongWith(!controlPanel.shakeIntake().getAsBoolean() ? Commands.none() : intake.shake())
                 .alongWith(
                     Commands.waitSeconds(0.4)
                         .andThen(Commands.run(() -> rollers.setSpeeds(40, 20, 20), rollers)))
