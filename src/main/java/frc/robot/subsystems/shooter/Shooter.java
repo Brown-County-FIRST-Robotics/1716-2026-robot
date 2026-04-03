@@ -135,7 +135,7 @@ public class Shooter extends SubsystemBase {
 
   public void trackBothToShoot(Pose2d p2, ChassisSpeeds speeds) {
     double distanceToTarget = getTurretTarget(p2).getNorm();
-    double airTime = distanceToTarget / 6;
+    double airTime = distanceToTarget / 3;
     p2 = p2.exp(speeds.toTwist2d(airTime));
 
     Logger.recordOutput("turret/autoAimRobotPosVelocityAdjusted", p2);
