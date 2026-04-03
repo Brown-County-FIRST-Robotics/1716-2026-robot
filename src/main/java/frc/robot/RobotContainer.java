@@ -244,6 +244,17 @@ public class RobotContainer extends PeriodicRunnable {
         "Red - Depot - Trench",
         new Pose2d(3.638606071472168, 1.1230977773666382, Rotation2d.kZero));
     initPosChooser.addOption(
+        "Blue - Human Player - Hub",
+        new Pose2d(3.638606071472168, 3.5350501537323, Rotation2d.kZero));
+    initPosChooser.addOption(
+        "Blue - Depot - Hub",
+        new Pose2d(3.638606071472168, 8.0692 - 3.5350501537323, Rotation2d.kZero));
+    initPosChooser.addOption(
+        "Red - Human Player - Hub",
+        new Pose2d(3.638606071472168, 8.0692 - 3.5350501537323, Rotation2d.kZero));
+    initPosChooser.addOption(
+        "Red - Depot - Hub", new Pose2d(3.638606071472168, 3.5350501537323, Rotation2d.kZero));
+    initPosChooser.addOption(
         "Centered on Hub, intake toward hub",
         new Pose2d(3.638606071472168, 4.050412178039551, Rotation2d.kZero));
     initPosChooser.addOption(
@@ -299,6 +310,13 @@ public class RobotContainer extends PeriodicRunnable {
             "HALF FIELD - ADVANCED - End on same trench",
             () ->
                 MirroredAutoInfo.generateParallelCommand(drive, intake, shooter, rollers, 0.2, 7.5),
+            true),
+        new MirroredAutoInfo(
+            "HubOffCenter",
+            "ON HUB - ADVANCED - Back up and shoot",
+            () ->
+                MirroredAutoInfo.generateParallelCommand(
+                    drive, intake, shooter, rollers, 0.62, 1.7),
             true)
         // Add more here here
       };
