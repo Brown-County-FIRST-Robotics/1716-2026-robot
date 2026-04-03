@@ -77,7 +77,8 @@ public class Intake extends SubsystemBase {
             () -> {
               isMovingIn[0] = true;
               time.restart();
-            });
+            })
+        .alongWith(intake());
   }
 
   public Command extendHopper() {
