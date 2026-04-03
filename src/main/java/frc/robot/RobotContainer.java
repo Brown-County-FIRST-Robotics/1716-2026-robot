@@ -299,6 +299,13 @@ public class RobotContainer extends PeriodicRunnable {
             "HALF FIELD - ADVANCED - End on same trench",
             () ->
                 MirroredAutoInfo.generateParallelCommand(drive, intake, shooter, rollers, 0.2, 7.5),
+            true),
+        new MirroredAutoInfo(
+            "HubOffCenter",
+            "ON HUB - ADVANCED - Back up and shoot",
+            () ->
+                MirroredAutoInfo.generateParallelCommand(
+                    drive, intake, shooter, rollers, 0.62, 1.7),
             true)
         // Add more here here
       };
