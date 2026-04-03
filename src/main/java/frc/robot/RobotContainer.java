@@ -15,7 +15,6 @@ import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -354,33 +353,9 @@ public class RobotContainer extends PeriodicRunnable {
             false,
             () -> {
               return controlPanel.questDown().getAsBoolean()
-                  || controller.leftStick().getAsBoolean();
+                  || controller.rightStick().getAsBoolean();
             },
             () -> false));
-
-    controller
-        .rightStick()
-        .whileTrue(
-            DriveCommands.joystickDrive(
-                drive,
-                () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-                false,
-                () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-                false,
-                () -> {
-                  var speeds =
-                      ChassisSpeeds.fromRobotRelativeSpeeds(
-                          drive.getChassisSpeeds(), drive.getRotation());
-                  double dx = speeds.vxMetersPerSecond;
-                  double dy = speeds.vyMetersPerSecond;
-                  return new Translation2d(dx, dy).getAngle().getRadians();
-                },
-                true,
-                () -> {
-                  return controlPanel.questDown().getAsBoolean()
-                      || controller.leftStick().getAsBoolean();
-                },
-                () -> false));
 
     controller
         .leftBumper()
@@ -405,7 +380,7 @@ public class RobotContainer extends PeriodicRunnable {
                         },
                         true,
                         () -> {
-                          return opcon.a().getAsBoolean() || controller.leftStick().getAsBoolean();
+                          return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
                         },
                         () -> false),
                 Set.of(drive)));
@@ -432,7 +407,7 @@ public class RobotContainer extends PeriodicRunnable {
                         },
                         true,
                         () -> {
-                          return opcon.a().getAsBoolean() || controller.leftStick().getAsBoolean();
+                          return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
                         },
                         () -> false),
                 Set.of(drive)));
@@ -489,7 +464,8 @@ public class RobotContainer extends PeriodicRunnable {
                       rollers.setSpeeds(0, 0, -20);
                     })
                 .alongWith(DriveCommands.shake(drive))
-                .alongWith(!controlPanel.shakeIntake().getAsBoolean() ? Commands.none() : intake.shake())
+                .alongWith(
+                    !controlPanel.shakeIntake().getAsBoolean() ? Commands.none() : intake.shake())
                 .alongWith(
                     Commands.waitSeconds(0.4)
                         .andThen(Commands.run(() -> rollers.setSpeeds(40, 20, 20), rollers)))
