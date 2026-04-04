@@ -244,6 +244,17 @@ public class RobotContainer extends PeriodicRunnable {
         "Red - Depot - Trench",
         new Pose2d(3.638606071472168, 1.1230977773666382, Rotation2d.kZero));
     initPosChooser.addOption(
+        "Blue - Human Player - Hub",
+        new Pose2d(3.638606071472168, 3.5350501537323, Rotation2d.kZero));
+    initPosChooser.addOption(
+        "Blue - Depot - Hub",
+        new Pose2d(3.638606071472168, 8.0692 - 3.5350501537323, Rotation2d.kZero));
+    initPosChooser.addOption(
+        "Red - Human Player - Hub",
+        new Pose2d(3.638606071472168, 8.0692 - 3.5350501537323, Rotation2d.kZero));
+    initPosChooser.addOption(
+        "Red - Depot - Hub", new Pose2d(3.638606071472168, 3.5350501537323, Rotation2d.kZero));
+    initPosChooser.addOption(
         "Centered on Hub, intake toward hub",
         new Pose2d(3.638606071472168, 4.050412178039551, Rotation2d.kZero));
     initPosChooser.addOption(
@@ -275,6 +286,13 @@ public class RobotContainer extends PeriodicRunnable {
       autoChooser.addOption(
           "Choreo - Middle -> climb",
           AutoBuilder.followPath(PathPlannerPath.fromChoreoTrajectory("MidToClimb")));
+      autoChooser.addOption(
+          "Choreo - CENTERED ON HUB - ADVANCED - Back up and shoot",
+          AutoBuilder.followPath(PathPlannerPath.fromChoreoTrajectory("MidToShoot"))
+              .andThen(DriveCommands.shake(drive))
+              .alongWith(
+                  MirroredAutoInfo.generateParallelCommand(
+                      drive, intake, shooter, rollers, 0.0, 1.1)));
 
       // Both-side autos
 
@@ -298,7 +316,22 @@ public class RobotContainer extends PeriodicRunnable {
             "FuelCollectorHalf",
             "HALF FIELD - ADVANCED - End on same trench",
             () ->
-                MirroredAutoInfo.generateParallelCommand(drive, intake, shooter, rollers, 0.2, 7.5),
+                MirroredAutoInfo.generateParallelCommand(
+                    drive, intake, shooter, rollers, 0.2, 13.0),
+            true),
+        new MirroredAutoInfo(
+            "HubOffCenter",
+            "OFFSET ON HUB - ADVANCED - Back up and shoot",
+            () ->
+                MirroredAutoInfo.generateParallelCommand(
+                    drive, intake, shooter, rollers, 0.62, 1.7),
+            true),
+        new MirroredAutoInfo(
+            "FuelToucher",
+            "FULL FIELD - ADVANCED - End on same trench",
+            () ->
+                MirroredAutoInfo.generateParallelCommand(
+                    drive, intake, shooter, rollers, 0.25, 12.5),
             true)
         // Add more here here
       };
@@ -465,7 +498,7 @@ public class RobotContainer extends PeriodicRunnable {
                     })
                 .alongWith(DriveCommands.shake(drive))
                 .alongWith(
-                    !controlPanel.shakeIntake().getAsBoolean() ? Commands.none() : intake.shake())
+                    controlPanel.shakeIntake().getAsBoolean() ? Commands.none() : intake.shake())
                 .alongWith(
                     Commands.waitSeconds(0.4)
                         .andThen(Commands.run(() -> rollers.setSpeeds(40, 20, 20), rollers)))
