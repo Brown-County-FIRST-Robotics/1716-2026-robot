@@ -377,72 +377,69 @@ public class RobotContainer extends PeriodicRunnable {
     drive.setDefaultCommand(
         DriveCommands.joystickDrive(
             drive,
-            () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+            () -> -controller.getLeftY() / 2,
             false,
-            () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+            () -> -controller.getLeftX() / 2,
             false,
-            () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+            () -> -controller.getRightX() / 2,
             false,
-            () -> {
-              return controlPanel.questDown().getAsBoolean()
-                  || controller.rightStick().getAsBoolean();
-            },
+            () -> true,
             () -> false));
 
-    controller
-        .leftBumper()
-        .whileTrue(
-            Commands.defer(
-                () ->
-                    DriveCommands.joystickDrive(
-                        drive,
-                        () ->
-                            -controller.getLeftY()
-                                / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-                        false,
-                        () ->
-                            DriverStation.getAlliance().isPresent()
-                                    && DriverStation.getAlliance().get() == Alliance.Red
-                                ? (0.639445 - 0.0254)
-                                : 8.069275 - (0.639445 - 0.0254),
-                        true,
-                        () -> {
-                          double r = drive.getRotation().getCos();
-                          return r > 0 ? 0 : Math.PI;
-                        },
-                        true,
-                        () -> {
-                          return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
-                        },
-                        () -> false),
-                Set.of(drive)));
-    controller
-        .rightBumper()
-        .whileTrue(
-            Commands.defer(
-                () ->
-                    DriveCommands.joystickDrive(
-                        drive,
-                        () ->
-                            -controller.getLeftY()
-                                / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-                        false,
-                        () ->
-                            DriverStation.getAlliance().isPresent()
-                                    && DriverStation.getAlliance().get() == Alliance.Red
-                                ? 8.069275 - (0.639445 - 0.0254)
-                                : (0.639445 - 0.0254),
-                        true,
-                        () -> {
-                          double r = drive.getRotation().getCos();
-                          return r > 0 ? 0 : Math.PI;
-                        },
-                        true,
-                        () -> {
-                          return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
-                        },
-                        () -> false),
-                Set.of(drive)));
+    // controller
+    //     .leftBumper()
+    //     .whileTrue(
+    //         Commands.defer(
+    //             () ->
+    //                 DriveCommands.joystickDrive(
+    //                     drive,
+    //                     () ->
+    //                         -controller.getLeftY()
+    //                             / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+    //                     false,
+    //                     () ->
+    //                         DriverStation.getAlliance().isPresent()
+    //                                 && DriverStation.getAlliance().get() == Alliance.Red
+    //                             ? (0.639445 - 0.0254)
+    //                             : 8.069275 - (0.639445 - 0.0254),
+    //                     true,
+    //                     () -> {
+    //                       double r = drive.getRotation().getCos();
+    //                       return r > 0 ? 0 : Math.PI;
+    //                     },
+    //                     true,
+    //                     () -> {
+    //                       return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
+    //                     },
+    //                     () -> false),
+    //             Set.of(drive)));
+    // controller
+    //     .rightBumper()
+    //     .whileTrue(
+    //         Commands.defer(
+    //             () ->
+    //                 DriveCommands.joystickDrive(
+    //                     drive,
+    //                     () ->
+    //                         -controller.getLeftY()
+    //                             / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+    //                     false,
+    //                     () ->
+    //                         DriverStation.getAlliance().isPresent()
+    //                                 && DriverStation.getAlliance().get() == Alliance.Red
+    //                             ? 8.069275 - (0.639445 - 0.0254)
+    //                             : (0.639445 - 0.0254),
+    //                     true,
+    //                     () -> {
+    //                       double r = drive.getRotation().getCos();
+    //                       return r > 0 ? 0 : Math.PI;
+    //                     },
+    //                     true,
+    //                     () -> {
+    //                       return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
+    //                     },
+    //                     () -> false),
+    //             Set.of(drive)));
 
     controlPanel
         .questDown()
