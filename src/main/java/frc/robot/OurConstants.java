@@ -44,7 +44,7 @@ public final class OurConstants {
   }
 
   public static final String CAN_NAME = "1716_canivore";
-  public static final CANBus CAN_BUS = new CANBus(CAN_NAME);
+  public static final CANBus CAN_BUS = new CANBus("rio");
   public static final CANBus INTAKE_CAN_BUS = new CANBus("rio");
 
   public static final double CONNECTED_DEBOUNCE_TIME = 0.5;

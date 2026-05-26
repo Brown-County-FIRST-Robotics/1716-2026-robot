@@ -41,7 +41,7 @@ public class Intake extends SubsystemBase {
   }
 
   public Command intake() {
-    return Commands.run(() -> io.intakeSpeed(60), this);
+    return Commands.run(() -> io.intakeSpeed(100), this);
   }
 
   public Command intakeReverse() {

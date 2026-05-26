@@ -81,34 +81,31 @@ class MirroredAutoInfo {
       double intakeWaitSeconds,
       double shootWaitSeconds) {
     assert (shootWaitSeconds - intakeWaitSeconds - 1 > 0);
-    return
-            Commands.waitSeconds(intakeWaitSeconds)
+    return Commands.waitSeconds(intakeWaitSeconds)
+        .andThen(
+            intake
+                .extendHopper()
+                .andThen(Commands.waitSeconds(1.0))
+                .andThen(intake.intake().withTimeout(shootWaitSeconds - intakeWaitSeconds - 1))
                 .andThen(
-                    intake
-                        .extendHopper()
-                        .andThen(Commands.waitSeconds(1.0))
+                    Commands.runOnce(
+                            () -> {
+                              shooter.setShooterSpeed(80);
+                              shooter.quickServoCommand(1);
+                            })
                         .andThen(
-                            intake.intake().withTimeout(shootWaitSeconds - intakeWaitSeconds - 1))
-                        .andThen(
-                            Commands.runOnce(
-                                    () -> {
-                                      shooter.setShooterSpeed(80);
-                                      shooter.quickServoCommand(1);
-                                    })
+                            Commands.waitSeconds(0.4)
                                 .andThen(
-                                    Commands.waitSeconds(0.4)
-                                        .andThen(
-                                            Commands.run(
-                                                () -> rollers.setSpeeds(20, 20, 20), rollers)))
-                                .alongWith(
-                                    Commands.run(
-                                        () ->
-                                            shooter.trackBothToShoot(
-                                                drive.getPose(),
-                                                ChassisSpeeds.fromRobotRelativeSpeeds(
-                                                    drive.getChassisSpeeds(), drive.getRotation())),
-                                        shooter))
-                                .alongWith(intake.shake())))
+                                    Commands.run(() -> rollers.setSpeeds(20, 20, 20), rollers)))
+                        .alongWith(
+                            Commands.run(
+                                () ->
+                                    shooter.trackBothToShoot(
+                                        drive.getPose(),
+                                        ChassisSpeeds.fromRobotRelativeSpeeds(
+                                            drive.getChassisSpeeds(), drive.getRotation())),
+                                shooter))
+                        .alongWith(intake.shake())))
         .beforeStarting(
             () -> {
               shooter.setShooterSpeed(0);
@@ -495,12 +492,12 @@ public class RobotContainer extends PeriodicRunnable {
                       shooter.setShooterSpeed(80);
                       rollers.setSpeeds(0, 0, -20);
                     })
-                .alongWith(DriveCommands.shake(drive))
+                // .alongWith()
                 .alongWith(
                     controlPanel.shakeIntake().getAsBoolean() ? Commands.none() : intake.shake())
                 .alongWith(
                     Commands.waitSeconds(0.4)
-                        .andThen(Commands.run(() -> rollers.setSpeeds(40, 20, 20), rollers)))
+                        .andThen(Commands.run(() -> rollers.setSpeeds(40, 20, 40), rollers)))
                 .alongWith(
                     Commands.race(
                             Commands.run(() -> controller.setRumble(RumbleType.kRightRumble, 0.5)),
