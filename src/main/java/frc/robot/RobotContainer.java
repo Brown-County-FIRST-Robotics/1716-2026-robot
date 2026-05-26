@@ -497,7 +497,7 @@ public class RobotContainer extends PeriodicRunnable {
                     controlPanel.shakeIntake().getAsBoolean() ? Commands.none() : intake.shake())
                 .alongWith(
                     Commands.waitSeconds(0.4)
-                        .andThen(Commands.run(() -> rollers.setSpeeds(40, 20, 40), rollers)))
+                        .andThen(Commands.run(() -> rollers.setSpeeds(80, 20, 40), rollers)))
                 .alongWith(
                     Commands.race(
                             Commands.run(() -> controller.setRumble(RumbleType.kRightRumble, 0.5)),
