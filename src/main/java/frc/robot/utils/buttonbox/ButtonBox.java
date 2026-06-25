@@ -10,11 +10,10 @@ public class ButtonBox {
   final List<ButtonBoxPanel> panels = new ArrayList<>();
   final GenericHID wrapped;
   final List<LoggedNetworkBoolean> dash = new ArrayList<>();
-  Alert disconnectedAlert = new Alert("BB Unplugged", Alert.AlertType.kWarning);
+  Alert disconnectedAlert = new Alert("Buttonbox Unplugged", Alert.AlertType.kWarning);
 
   public ButtonBox(int index) {
     wrapped = new GenericHID(index);
-    // TODO: make this work
     for (int i = 0; i < 50; i++) {
       dash.add(new LoggedNetworkBoolean("Shuffleboard/buttonbox/" + i));
       dash.get(dash.size() - 1).set(false);

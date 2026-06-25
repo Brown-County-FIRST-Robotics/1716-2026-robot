@@ -12,11 +12,13 @@ public class QuestIOQuest implements QuestIO {
   @Override
   public void updateInputs(QuestIOInputs inputs) {
     qn.commandPeriodic();
-    var frams = qn.getAllUnreadPoseFrames();
-    if (frams.length > 0) {
-      inputs.whereami = frams[0].questPose3d();
+    var frames = qn.getAllUnreadPoseFrames();
+    if (frames.length > 0) {
+      inputs.lastPose = frames[frames.length - 1].questPose3d();
     }
     inputs.connected = qn.isConnected();
-    // inputs.raw_poses = (Pose3d[]) Arrays.stream(frams).map(PoseFrame::questPose3d).toArray();
+    inputs.tracking = qn.isTracking();
+    var bat = qn.getBatteryPercent();
+    inputs.battery = bat.isPresent() ? bat.getAsInt() : -1;
   }
 }

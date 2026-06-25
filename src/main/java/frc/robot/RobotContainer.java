@@ -10,9 +10,12 @@ package frc.robot;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.util.FileVersionException;
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.GenericHID;
@@ -27,6 +30,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.drive.Drive.HoldMode;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
@@ -45,12 +49,79 @@ import frc.robot.subsystems.shooter.TurretIOKrakens;
 import frc.robot.subsystems.vision.Quest;
 import frc.robot.subsystems.vision.QuestIOQuest;
 import frc.robot.utils.PeriodicRunnable;
+import frc.robot.utils.buttonbox.ButtonBox;
+import frc.robot.utils.buttonbox.ControlPanel;
 import gg.questnav.questnav.QuestNav;
 import java.io.IOException;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.json.simple.parser.ParseException;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+
+class MirroredAutoInfo {
+  public String name;
+  public String desc;
+  public Supplier<Command> parallelCommand;
+  boolean shakeOnEnd;
+
+  public MirroredAutoInfo(
+      String name, String desc, Supplier<Command> parallelCommand, boolean shakeOnEnd) {
+    this.name = name;
+    this.desc = desc;
+    this.parallelCommand = parallelCommand;
+    this.shakeOnEnd = shakeOnEnd;
+  }
+
+  public static Command generateParallelCommand(
+      Drive drive,
+      Intake intake,
+      Shooter shooter,
+      Rollers rollers,
+      double intakeWaitSeconds,
+      double shootWaitSeconds) {
+    assert (shootWaitSeconds - intakeWaitSeconds - 1 > 0);
+    return Commands.waitSeconds(intakeWaitSeconds)
+        .andThen(
+            intake
+                .extendHopper()
+                .andThen(Commands.waitSeconds(1.0))
+                .andThen(intake.intake().withTimeout(shootWaitSeconds - intakeWaitSeconds - 1))
+                .andThen(
+                    Commands.runOnce(
+                            () -> {
+                              shooter.setShooterSpeed(80);
+                              shooter.quickServoCommand(1);
+                            })
+                        .andThen(
+                            Commands.waitSeconds(0.4)
+                                .andThen(
+                                    Commands.run(() -> rollers.setSpeeds(20, 20, 20), rollers)))
+                        .alongWith(
+                            Commands.run(
+                                () ->
+                                    shooter.trackBothToShoot(
+                                        drive.getPose(),
+                                        ChassisSpeeds.fromRobotRelativeSpeeds(
+                                            drive.getChassisSpeeds(), drive.getRotation())),
+                                shooter))
+                        .alongWith(intake.shake())))
+        .beforeStarting(
+            () -> {
+              shooter.setShooterSpeed(0);
+              shooter.quickServoCommand(0);
+              rollers.setSpeeds(0, 0, 0);
+              intake.setSpeeds(0, 0);
+            })
+        .finallyDo(
+            () -> {
+              shooter.setShooterSpeed(0);
+              shooter.quickServoCommand(0);
+              rollers.setSpeeds(0, 0, 0);
+              intake.setSpeeds(0, 0);
+            });
+  }
+}
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -61,23 +132,29 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 public class RobotContainer extends PeriodicRunnable {
   // Subsystems
   private final Drive drive;
-  private final Quest qwest;
+  private final Quest quest;
   private Shooter shooter;
   private Rollers rollers;
   private Intake intake;
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
   private final CommandXboxController opcon = new CommandXboxController(1);
-
+  private ButtonBox buttonBox = new ButtonBox(2);
+  private ControlPanel controlPanel = new ControlPanel(buttonBox);
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
   private final LoggedDashboardChooser<Pose2d> initPosChooser;
 
+  private final UsbCamera camera;
+
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     super();
-    Logger.recordOutput("Time Left", -1);
-    qwest = new Quest(new QuestIOQuest(new QuestNav()));
+
+    camera = CameraServer.startAutomaticCapture();
+    camera.setResolution(320, 200);
+    camera.setFPS(30);
+    quest = new Quest(new QuestIOQuest(new QuestNav()));
     switch (Constants.currentMode) {
       case REAL:
         // Real robot, instantiate hardware IO implementations
@@ -85,12 +162,12 @@ public class RobotContainer extends PeriodicRunnable {
         // a CANcoder
         drive =
             new Drive(
-                qwest,
+                quest,
                 new GyroIO() {
                   @Override
                   public void updateInputs(GyroIOInputs inputs) {
-                    inputs.connected = qwest.isConnected();
-                    inputs.yawPosition = qwest.gyroLikeYaw();
+                    inputs.connected = quest.trust();
+                    inputs.yawPosition = quest.gyroLikeYaw();
                   }
                 },
                 new ModuleIOTalonFX(TunerConstants.FrontLeft),
@@ -98,7 +175,7 @@ public class RobotContainer extends PeriodicRunnable {
                 new ModuleIOTalonFX(TunerConstants.BackLeft),
                 new ModuleIOTalonFX(TunerConstants.BackRight));
         shooter = new Shooter(new ShooterIOKrakens(62, 9), new TurretIOKrakens(36, 35, 22));
-        rollers = new Rollers(new RollersIOKraken(43, 37));
+        rollers = new Rollers(new RollersIOKraken(43, 34, 37));
         intake = new Intake(new IntakeIOKraken(40, 38));
 
         // The ModuleIOTalonFXS implementation provides an example implementation for
@@ -123,7 +200,7 @@ public class RobotContainer extends PeriodicRunnable {
         // Sim robot, instantiate physics sim IO implementations
         drive =
             new Drive(
-                qwest,
+                quest,
                 new GyroIO() {},
                 new ModuleIOSim(TunerConstants.FrontLeft),
                 new ModuleIOSim(TunerConstants.FrontRight),
@@ -139,7 +216,7 @@ public class RobotContainer extends PeriodicRunnable {
         // Replayed robot, disable IO implementations
         drive =
             new Drive(
-                qwest,
+                quest,
                 new GyroIO() {},
                 new ModuleIO() {},
                 new ModuleIO() {},
@@ -163,7 +240,22 @@ public class RobotContainer extends PeriodicRunnable {
         "Red - Depot - Trench",
         new Pose2d(3.638606071472168, 1.1230977773666382, Rotation2d.kZero));
     initPosChooser.addOption(
-        "Centered on Hub", new Pose2d(3.638606071472168, 4.050412178039551, Rotation2d.kZero));
+        "Blue - Human Player - Hub",
+        new Pose2d(3.638606071472168, 3.5350501537323, Rotation2d.kZero));
+    initPosChooser.addOption(
+        "Blue - Depot - Hub",
+        new Pose2d(3.638606071472168, 8.0692 - 3.5350501537323, Rotation2d.kZero));
+    initPosChooser.addOption(
+        "Red - Human Player - Hub",
+        new Pose2d(3.638606071472168, 8.0692 - 3.5350501537323, Rotation2d.kZero));
+    initPosChooser.addOption(
+        "Red - Depot - Hub", new Pose2d(3.638606071472168, 3.5350501537323, Rotation2d.kZero));
+    initPosChooser.addOption(
+        "Centered on Hub, intake toward hub",
+        new Pose2d(3.638606071472168, 4.050412178039551, Rotation2d.kZero));
+    initPosChooser.addOption(
+        "Centered on Hub intake toward drivers",
+        new Pose2d(3.638606071472168, 4.050412178039551, Rotation2d.k180deg));
 
     // Set up auto routines
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
@@ -190,29 +282,77 @@ public class RobotContainer extends PeriodicRunnable {
       autoChooser.addOption(
           "Choreo - Middle -> climb",
           AutoBuilder.followPath(PathPlannerPath.fromChoreoTrajectory("MidToClimb")));
+      autoChooser.addOption(
+          "Choreo - CENTERED ON HUB - ADVANCED - Back up and shoot",
+          AutoBuilder.followPath(PathPlannerPath.fromChoreoTrajectory("MidToShoot"))
+              .andThen(DriveCommands.shake(drive))
+              .alongWith(
+                  MirroredAutoInfo.generateParallelCommand(
+                      drive, intake, shooter, rollers, 0.0, 1.1)));
 
       // Both-side autos
 
       // ### NOTE ###
       // It is important that autos are developed as *BLUE* and the originating
-      // side is the same as the human player. In Choreo as of 2/20/26, that is
+      // side is the same as the human player. In Choreo as of 3/30/26, that is
       // the bottom left corner.
-      String[][] items = {
-        // {name, description}
-        {"FuelToucher", "FULL FIELD - Push balls to side -> end on same trench"},
-        {"FuelCollectorFull", "FULL FIELD - Push balls to side -> end on opposite trench"},
-        {"FuelCollectorHalf", "HALF FIELD - Push balls to side -> end on same trench"}
+      MirroredAutoInfo[] items = {
+        // (name, description, parallel command - shooting, intake, etc)
+        new MirroredAutoInfo(
+            "FuelToucher",
+            "FULL FIELD - Push balls to side -> end on same trench",
+            () -> Commands.none(),
+            false),
+        new MirroredAutoInfo(
+            "FuelCollectorHalf",
+            "HALF FIELD - Push balls to side -> end on same trench",
+            () -> Commands.none(),
+            false),
+        new MirroredAutoInfo(
+            "FuelCollectorHalf",
+            "HALF FIELD - ADVANCED - End on same trench",
+            () ->
+                MirroredAutoInfo.generateParallelCommand(
+                    drive, intake, shooter, rollers, 0.2, 13.0),
+            true),
+        new MirroredAutoInfo(
+            "HubOffCenter",
+            "OFFSET ON HUB - ADVANCED - Back up and shoot",
+            () ->
+                MirroredAutoInfo.generateParallelCommand(
+                    drive, intake, shooter, rollers, 0.62, 1.7),
+            true),
+        new MirroredAutoInfo(
+            "FuelToucher",
+            "FULL FIELD - ADVANCED - End on same trench",
+            () ->
+                MirroredAutoInfo.generateParallelCommand(
+                    drive, intake, shooter, rollers, 0.25, 12.5),
+            true)
         // Add more here here
       };
 
-      for (String[] item : items) {
-        String name = item[0];
-        String desc = item[1];
+      for (MirroredAutoInfo item : items) {
+        String name = item.name;
+        String desc = item.desc;
+        Supplier<Command> parallel = item.parallelCommand;
+        boolean shake = item.shakeOnEnd;
 
         PathPlannerPath path = PathPlannerPath.fromChoreoTrajectory(name);
-        autoChooser.addOption("Choreo - Human player side - " + desc, AutoBuilder.followPath(path));
         autoChooser.addOption(
-            "Choreo - Depot side - " + desc, AutoBuilder.followPath(path.mirrorPath()));
+            "Choreo - Human player side - " + desc,
+            parallel
+                .get()
+                .alongWith(
+                    AutoBuilder.followPath(path)
+                        .andThen(shake ? DriveCommands.shake(drive) : Commands.none())));
+        autoChooser.addOption(
+            "Choreo - Depot side - " + desc,
+            parallel
+                .get()
+                .alongWith(
+                    AutoBuilder.followPath(path.mirrorPath())
+                        .andThen(shake ? DriveCommands.shake(drive) : Commands.none())));
       }
     } catch (FileVersionException | IOException | ParseException e) {
       e.printStackTrace();
@@ -235,60 +375,99 @@ public class RobotContainer extends PeriodicRunnable {
         DriveCommands.joystickDrive(
             drive,
             () -> -controller.getLeftY() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+            false,
             () -> -controller.getLeftX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+            false,
             () -> -controller.getRightX() / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
-            opcon.a(),
-            controller.rightBumper()));
+            false,
+            () -> {
+              return controlPanel.questDown().getAsBoolean()
+                  || controller.rightStick().getAsBoolean();
+            },
+            () -> false));
 
     controller
-        .leftStick()
+        .leftBumper()
         .whileTrue(
             Commands.defer(
                 () ->
-                    DriveCommands.driveToPose(
+                    DriveCommands.joystickDrive(
                         drive,
-                        new Pose2d(
-                            drive.getPose().getX(),
-                            DriverStation.getAlliance().get() == Alliance.Red
-                                ? 0.6238498687744141
-                                : 8.0692 - 0.6238498687744141,
-                            Rotation2d.kZero)),
+                        () ->
+                            -controller.getLeftY()
+                                / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+                        false,
+                        () ->
+                            DriverStation.getAlliance().isPresent()
+                                    && DriverStation.getAlliance().get() == Alliance.Red
+                                ? (0.639445 - 0.0254)
+                                : 8.069275 - (0.639445 - 0.0254),
+                        true,
+                        () -> {
+                          double r = drive.getRotation().getCos();
+                          return r > 0 ? 0 : Math.PI;
+                        },
+                        true,
+                        () -> {
+                          return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
+                        },
+                        () -> false),
                 Set.of(drive)));
     controller
-        .rightStick()
+        .rightBumper()
         .whileTrue(
             Commands.defer(
                 () ->
-                    DriveCommands.driveToPose(
+                    DriveCommands.joystickDrive(
                         drive,
-                        new Pose2d(
-                            drive.getPose().getX(),
-                            DriverStation.getAlliance().get() == Alliance.Red
-                                ? 8.0692 - 0.6238498687744141
-                                : 0.6238498687744141,
-                            Rotation2d.kZero)),
+                        () ->
+                            -controller.getLeftY()
+                                / (controller.leftTrigger().getAsBoolean() ? 2 : 1),
+                        false,
+                        () ->
+                            DriverStation.getAlliance().isPresent()
+                                    && DriverStation.getAlliance().get() == Alliance.Red
+                                ? 8.069275 - (0.639445 - 0.0254)
+                                : (0.639445 - 0.0254),
+                        true,
+                        () -> {
+                          double r = drive.getRotation().getCos();
+                          return r > 0 ? 0 : Math.PI;
+                        },
+                        true,
+                        () -> {
+                          return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
+                        },
+                        () -> false),
                 Set.of(drive)));
 
-    opcon.a().whileTrue(Commands.run(() -> shooter.commandTurret(Rotation2d.k180deg)));
+    controlPanel
+        .questDown()
+        .whileTrue(Commands.run(() -> shooter.commandTurret(Rotation2d.k180deg), shooter));
 
     // Track by default
     shooter.setDefaultCommand(
         Commands.run(
-            () ->
-                shooter.commandTurretToTrack(
-                    drive
-                        .getPose()
-                        .plus(
-                            new Transform2d(
-                                0,
-                                0,
-                                Rotation2d.fromRadians(
-                                    drive.getChassisSpeeds().omegaRadiansPerSecond
-                                        * OurConstants.AIM_LOOKAHEAD)))),
+            () -> {
+              shooter.commandTurretToTrack(
+                  drive
+                      .getPose()
+                      .plus(
+                          new Transform2d(
+                              0,
+                              0,
+                              Rotation2d.fromRadians(
+                                  drive.getChassisSpeeds().omegaRadiansPerSecond
+                                      * OurConstants.AIM_LOOKAHEAD))));
+              shooter.quickServoCommand(0);
+            },
             shooter));
 
     // Switch to X pattern when button is pressed
-    controller.leftBumper().onTrue(Commands.runOnce(drive::stopWithX, drive));
+    // controller.leftBumper().onTrue(Commands.runOnce(drive::stopWithX, drive));
+
+    // Stop intake when no commands are running
+    intake.setDefaultCommand(intake.intakeStop());
 
     // Reset initial pos on auto init
     RobotModeTriggers.autonomous()
@@ -298,72 +477,155 @@ public class RobotContainer extends PeriodicRunnable {
 
     new Trigger(intake::isExtenderConnected).onTrue(Commands.runOnce(intake::setZeroPosition));
     RobotModeTriggers.autonomous().onTrue(Commands.runOnce(intake::setZeroPosition));
+
+    new Trigger(quest::trust)
+        .onFalse(
+            Commands.runOnce(() -> controller.setRumble(RumbleType.kLeftRumble, 1))
+                .andThen(Commands.waitSeconds(0.1))
+                .andThen(() -> controller.setRumble(RumbleType.kBothRumble, 0)));
     // Press right trigger to run shooter startup
     controller
         .rightTrigger(0.7)
         .whileTrue(
-            Commands.run(
+            Commands.runOnce(
                     () -> {
                       shooter.setShooterSpeed(80);
-                      shooter.quickServoCommand(1);
-                    },
-                    shooter)
+                      rollers.setSpeeds(0, 0, -20);
+                    })
+                // .alongWith()
+                .alongWith(
+                    controlPanel.shakeIntake().getAsBoolean() ? Commands.none() : intake.shake())
                 .alongWith(
                     Commands.waitSeconds(0.4)
-                        .andThen(Commands.run(() -> rollers.setSpeeds(20, 20), rollers)))
+                        .andThen(Commands.run(() -> rollers.setSpeeds(40, 20, 40), rollers)))
                 .alongWith(
                     Commands.race(
                             Commands.run(() -> controller.setRumble(RumbleType.kRightRumble, 0.5)),
                             Commands.waitSeconds(0.375))
                         .andThen(
                             Commands.run(() -> controller.setRumble(RumbleType.kBothRumble, 1.0))))
+                .alongWith(
+                    Commands.run(
+                        () ->
+                            shooter.trackBothToShoot(
+                                drive.getPose(),
+                                ChassisSpeeds.fromRobotRelativeSpeeds(
+                                    drive.getChassisSpeeds(), drive.getRotation())),
+                        shooter))
                 .finallyDo(
                     () -> {
                       shooter.quickWheelCommand(0);
-                      rollers.setSpeeds(0, 0);
+                      rollers.setSpeeds(0, 0, 0);
                       shooter.quickServoCommand(0);
                       controller.setRumble(RumbleType.kBothRumble, 0);
                     }));
 
-    opcon
-        .povLeft()
-        .onTrue(
-            Commands.runOnce(
-                () ->
-                    shooter.commandTurret(
-                        shooter.getTurretRotation().plus(Rotation2d.fromRotations(0.1)))));
-    opcon
-        .povRight()
-        .onTrue(
-            Commands.runOnce(
-                () ->
-                    shooter.commandTurret(
-                        shooter.getTurretRotation().plus(Rotation2d.fromRotations(-0.1)))));
-
     // Hood positions
-    opcon.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
-    opcon.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
+    // controller.y().whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
+    // controller.b().whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
+    controlPanel
+        .hoodSafePosition()
+        .whileTrue(Commands.run(() -> shooter.quickServoCommand(0), shooter));
+    controlPanel
+        .hoodShootPosition()
+        .whileTrue(Commands.run(() -> shooter.quickServoCommand(1), shooter));
 
     // Intake/hopper control
-    opcon.povUp().whileTrue(intake.extendHopperVelocity());
-    opcon.povDown().whileTrue(intake.retractHopperVelocity());
-    opcon.rightTrigger().onTrue(intake.extendHopper());
-    opcon.leftTrigger().onTrue(intake.retractHopper());
-    opcon.rightBumper().whileTrue(intake.intake());
-    opcon
-        .leftBumper()
+    controlPanel.hopperOut().whileTrue(intake.extendHopperVelocity(3));
+    controlPanel.hopperIn().whileTrue(intake.retractHopperVelocity(15));
+    // opcon.rightTrigger().onTrue(intake.extendHopper());
+    // opcon.leftTrigger().onTrue(intake.retractHopper());
+    controlPanel.intakeForward().whileTrue(intake.intake());
+    controlPanel
+        .intakeReverse()
         .whileTrue(
             intake
                 .intakeReverse()
                 .alongWith(
                     Commands.runEnd(
-                        () -> rollers.setSpeeds(-20, 0), () -> rollers.setSpeeds(0, 0))));
+                        () -> rollers.setSpeeds(20, -20, 0),
+                        () -> rollers.setSpeeds(0, 0, 0),
+                        rollers)));
+
+    controller.povUp().whileTrue(intake.extendHopperVelocity(3));
+    controller.povDown().whileTrue(intake.retractHopperVelocity(15));
+    controller.povRight().onTrue(intake.intake());
+    controller
+        .povLeft()
+        .whileTrue(
+            intake
+                .intakeReverse()
+                .alongWith(
+                    Commands.runEnd(
+                        () -> rollers.setSpeeds(20, -20, 0),
+                        () -> rollers.setSpeeds(0, 0, 0),
+                        rollers)));
+
+    // opcon.povUp().whileTrue(intake.extendHopperVelocity());
+    // opcon.povDown().whileTrue(intake.retractHopperVelocity());
+    // opcon.rightTrigger().onTrue(intake.extendHopper());
+    // opcon.leftTrigger().onTrue(intake.retractHopper());
+    // opcon.rightBumper().whileTrue(intake.intake());
+    // opcon
+    //     .leftBumper()
+    //     .whileTrue(
+    //         intake
+    //             .intakeReverse()
+    //             .alongWith(
+    //                 Commands.runEnd(
+    //                     () -> rollers.setSpeeds(20, -20, 0),
+    //                     () -> rollers.setSpeeds(0, 0, 0),
+    //                     rollers)));
 
     // Rotation snapping
-    controller.y().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.kZero));
-    controller.b().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.kCW_90deg));
-    controller.a().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.k180deg));
-    controller.x().onTrue(Commands.runOnce(() -> drive.targetAngle = Rotation2d.kCCW_90deg));
+    controller
+        .y()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  drive.targetAngle =
+                      DriverStation.getAlliance().isPresent()
+                              && DriverStation.getAlliance().get() == Alliance.Blue
+                          ? Rotation2d.kZero
+                          : Rotation2d.k180deg;
+                  drive.holdingAngle = HoldMode.HOLD;
+                }));
+    controller
+        .b()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  drive.targetAngle =
+                      DriverStation.getAlliance().isPresent()
+                              && DriverStation.getAlliance().get() == Alliance.Blue
+                          ? Rotation2d.kCW_90deg
+                          : Rotation2d.kCCW_90deg;
+                  drive.holdingAngle = HoldMode.HOLD;
+                }));
+    controller
+        .a()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  drive.targetAngle =
+                      DriverStation.getAlliance().isPresent()
+                              && DriverStation.getAlliance().get() == Alliance.Blue
+                          ? Rotation2d.k180deg
+                          : Rotation2d.kZero;
+                  drive.holdingAngle = HoldMode.HOLD;
+                }));
+    controller
+        .x()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  drive.targetAngle =
+                      DriverStation.getAlliance().isPresent()
+                              && DriverStation.getAlliance().get() == Alliance.Blue
+                          ? Rotation2d.kCCW_90deg
+                          : Rotation2d.kCW_90deg;
+                  drive.holdingAngle = HoldMode.HOLD;
+                }));
 
     shooter.register();
   }
@@ -391,6 +653,7 @@ public class RobotContainer extends PeriodicRunnable {
     if (DriverStation.isDisabled()) {
       currentPhase = "Disabled";
       timeUntilShiftEnd = -1;
+      matchTime = -1;
     } else if (DriverStation.isAutonomous()) {
       currentPhase = "Auto";
       timeUntilShiftEnd = matchTime;

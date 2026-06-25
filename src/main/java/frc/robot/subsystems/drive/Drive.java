@@ -51,6 +51,11 @@ import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class Drive extends SubsystemBase {
+  public enum HoldMode {
+    HOLD,
+    OFF
+  }
+
   // TunerConstants doesn't include these constants, so they are declared locally
   static final double ODOMETRY_FREQUENCY = TunerConstants.kCANBus.isNetworkFD() ? 250.0 : 100.0;
   public static final double DRIVE_BASE_RADIUS =
@@ -82,12 +87,14 @@ public class Drive extends SubsystemBase {
 
   static final Lock odometryLock = new ReentrantLock();
 
-  public boolean holdingAngle;
+  public HoldMode holdingAngle = HoldMode.OFF;
+  public boolean holdingX = false;
+  public boolean holdingY = false;
   public Rotation2d targetAngle;
-  public boolean holdingX;
-  public boolean holdingY;
   public double targetX;
   public double targetY;
+
+  public boolean shake = false;
 
   public final Quest quest;
 
@@ -122,8 +129,6 @@ public class Drive extends SubsystemBase {
       ModuleIO blModuleIO,
       ModuleIO brModuleIO) {
     field = new Field2d();
-    holdingAngle = false;
-    targetAngle = Rotation2d.kZero;
     this.quest = quest;
     this.gyroIO = gyroIO;
     modules[0] = new Module(flModuleIO, 0, TunerConstants.FrontLeft);
@@ -227,9 +232,21 @@ public class Drive extends SubsystemBase {
     // Update gyro alert
     gyroDisconnectedAlert.set(!gyroInputs.connected && Constants.currentMode != Mode.SIM);
 
+    // Reset the odometry to match the quest if it is connected
+    if (quest.trust())
+      poseEstimator.resetPosition(
+          quest.getPose().getRotation(), getModulePositions(), quest.getPose());
+
     // 2d field updates
     field.setRobotPose(getPose());
     SmartDashboard.putData("Field", field);
+
+    Logger.recordOutput("drive/holdingAngle", holdingAngle);
+    Logger.recordOutput("drive/holdingX", holdingX);
+    Logger.recordOutput("drive/holdingY", holdingY);
+    Logger.recordOutput("drive/targetAngle", targetAngle);
+    Logger.recordOutput("drive/targetX", targetX);
+    Logger.recordOutput("drive/targetY", targetY);
   }
 
   /**
@@ -339,7 +356,7 @@ public class Drive extends SubsystemBase {
   /** Returns the current odometry pose. */
   @AutoLogOutput(key = "Odometry/Robot")
   public Pose2d getPose() {
-    if (quest.isConnected()) return quest.getPose();
+    if (quest.trust()) return quest.getPose();
     return poseEstimator.getEstimatedPosition();
   }
 
@@ -354,13 +371,13 @@ public class Drive extends SubsystemBase {
 
   /** Resets the current odometry pose. */
   public void setPose(Pose2d pose) {
+    quest.setPose(pose);
     poseEstimator.resetPosition(rawGyroRotation, getModulePositions(), pose);
-    if (quest.isConnected()) quest.setPose(pose);
   }
 
   /** Resets the current holding angle of the robot */
   public void resetHold() {
-    holdingAngle = false;
+    holdingAngle = HoldMode.OFF;
     targetAngle = getRotation();
     holdingX = false;
     holdingY = false;

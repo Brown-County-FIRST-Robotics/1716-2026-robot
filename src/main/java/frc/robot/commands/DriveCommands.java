@@ -23,6 +23,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.drive.Drive.HoldMode;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.LinkedList;
@@ -30,22 +31,15 @@ import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
-
-class AngleHoldState {
-  boolean holding;
-  Rotation2d target;
-
-  public AngleHoldState(Rotation2d curr) {
-    holding = false;
-    target = curr;
-  }
-}
+import org.littletonrobotics.junction.Logger;
 
 public class DriveCommands {
   private static final double DEADBAND = 0.1;
-  private static final double DISTANCE_KP = 4.0;
-  private static final double DISTANCE_KD = 0.05;
-  private static final double ANGLE_KP = 8.0;
+  private static final double MIN_HOLD_VELOCITY = 0.1;
+  private static final double MIN_HOLD_ROTATION = 2 * Math.PI * 0.1;
+  private static final double DISTANCE_KP = 4.25;
+  private static final double DISTANCE_KD = 0.15;
+  private static final double ANGLE_KP = 6.0;
   private static final double ANGLE_KD = 0.4;
   private static final double ANGLE_MAX_VELOCITY = 8.0;
   private static final double ANGLE_MAX_ACCELERATION = 20.0;
@@ -54,9 +48,12 @@ public class DriveCommands {
   private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
   private static final double WHEEL_RADIUS_RAMP_RATE = 0.05; // Rad/Sec^2
 
-  private static final double LOOKAHEAD_X = 0.25; // m/sec
-  private static final double LOOKAHEAD_Y = 0.25; // m/sec
-  private static final double LOOKAHEAD_Z = 0.25; // Rad/sec
+  private static final double LOOKAHEAD_X = 0.05;
+  private static final double LOOKAHEAD_Y = 0.05;
+  private static final double LOOKAHEAD_Z = 0.05;
+
+  private static final double SHAKE_AMPLITUDE = 0.5; // m/s
+  private static final double SHAKE_FREQUENCY = 3; // hz
 
   private DriveCommands() {}
 
@@ -74,6 +71,10 @@ public class DriveCommands {
         .getTranslation();
   }
 
+  public static Command shake(Drive drive) {
+    return Commands.runEnd(() -> drive.shake = true, () -> drive.shake = false);
+  }
+
   /**
    * Field/robot relative drive command using two joysticks (controlling linear and angular
    * velocities).
@@ -81,8 +82,11 @@ public class DriveCommands {
   public static Command joystickDrive(
       Drive drive,
       DoubleSupplier xSupplier,
+      boolean useAsSetPosX,
       DoubleSupplier ySupplier,
+      boolean useAsSetPosY,
       DoubleSupplier omegaSupplier,
+      boolean useAsSetAngle,
       BooleanSupplier robotRelativeSupplier,
       BooleanSupplier snapToMajorAxis) {
     ProfiledPIDController angleController =
@@ -92,7 +96,7 @@ public class DriveCommands {
             ANGLE_KD,
             new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
     angleController.enableContinuousInput(-Math.PI, Math.PI);
-    angleController.setTolerance(Rotation2d.fromDegrees(5).getRadians());
+    angleController.setTolerance(Rotation2d.fromDegrees(2).getRadians());
 
     ProfiledPIDController distanceControllerX =
         new ProfiledPIDController(
@@ -111,90 +115,139 @@ public class DriveCommands {
     distanceControllerX.setTolerance(0.02);
     distanceControllerY.setTolerance(0.02);
 
+    Timer timer = new Timer();
+
     return Commands.run(
             () -> {
               double x = xSupplier.getAsDouble();
               double y = ySupplier.getAsDouble();
+              double omega = omegaSupplier.getAsDouble();
+
+              // Refresh values every run
+              if (useAsSetAngle) drive.targetAngle = Rotation2d.fromRadians(omega);
+              if (useAsSetPosX) drive.targetX = x;
+              if (useAsSetPosY) drive.targetY = y;
+
+              x = MathUtil.applyDeadband(x, DEADBAND);
+              y = MathUtil.applyDeadband(y, DEADBAND);
+              omega = MathUtil.applyDeadband(omega, DEADBAND);
 
               if (snapToMajorAxis.getAsBoolean()) {
                 if (Math.abs(x) > Math.abs(y)) y = 0;
                 else x = 0;
               }
 
-              double omega = omegaSupplier.getAsDouble();
+              // First assume all speeds are velocity targets from joysticks, if they are not then
+              // the PID controllers will directly modify the set speeds through targetSpeeds
 
-              ChassisSpeeds currentSpeeds = drive.getChassisSpeeds();
-
-              // ############ ROTATION AND TRANSLATION HOLDING ############
-              if (Math.abs(omega) < DEADBAND) {
-                if (!drive.holdingAngle) {
-                  drive.holdingAngle = true;
-                  drive.targetAngle =
-                      drive
-                          .getRotation()
-                          .plus(
-                              Rotation2d.fromRadians(
-                                  currentSpeeds.omegaRadiansPerSecond * LOOKAHEAD_Z));
-                  angleController.reset(drive.targetAngle.getRadians());
-                  omega = 0;
-                } else
-                  omega =
-                      angleController.calculate(
-                          drive.getRotation().getRadians(), drive.targetAngle.getRadians());
-              } else {
-                drive.holdingAngle = false;
-                omega = Math.copySign(omega * omega, omega) * drive.getMaxAngularSpeedRadPerSec();
-              }
-
-              if (Math.abs(x) < DEADBAND) {
-                if (!drive.holdingX) {
-                  drive.holdingX = true;
-                  drive.targetX =
-                      drive.getTranslation().getX() + currentSpeeds.vxMetersPerSecond * LOOKAHEAD_X;
-                  distanceControllerX.reset(drive.targetX);
-                  x = 0;
-                } else if (!distanceControllerX.atGoal())
-                  x = distanceControllerX.calculate(drive.getTranslation().getX(), drive.targetX);
-                else x = 0;
-              } else {
-                drive.holdingX = false;
-                x = Math.copySign(x * x, x) * drive.getMaxLinearSpeedMetersPerSec();
-              }
-              if (Math.abs(y) < DEADBAND) {
-                if (!drive.holdingY) {
-                  drive.holdingY = true;
-                  drive.targetY =
-                      drive.getTranslation().getY() + currentSpeeds.vyMetersPerSecond * LOOKAHEAD_Y;
-                  distanceControllerY.reset(drive.targetY);
-                  y = 0;
-                } else if (!distanceControllerY.atGoal())
-                  y = distanceControllerY.calculate(drive.getTranslation().getY(), drive.targetY);
-                else y = 0;
-              } else {
-                drive.holdingY = false;
-                y = Math.copySign(y * y, y) * drive.getMaxLinearSpeedMetersPerSec();
-              }
-
-              // Convert to field relative speeds & send command
-              ChassisSpeeds speeds = new ChassisSpeeds(x, y, omega);
               boolean isFlipped =
                   DriverStation.getAlliance().isPresent()
                       && DriverStation.getAlliance().get() == Alliance.Red;
 
-              if (robotRelativeSupplier.getAsBoolean()) drive.runVelocity(speeds);
-              else
-                drive.runVelocity(
-                    ChassisSpeeds.fromFieldRelativeSpeeds(
-                        speeds,
-                        isFlipped
-                            ? drive.getPose().getRotation().plus(new Rotation2d(Math.PI))
-                            : drive.getPose().getRotation()));
+              if (!robotRelativeSupplier.getAsBoolean() && isFlipped) {
+                x *= -1;
+                y *= -1;
+              }
+
+              ChassisSpeeds targetFieldSpeeds =
+                  new ChassisSpeeds(
+                      Math.copySign(x * x, x) * drive.getMaxLinearSpeedMetersPerSec(),
+                      Math.copySign(y * y, y) * drive.getMaxLinearSpeedMetersPerSec(),
+                      Math.copySign(omega * omega, omega) * drive.getMaxAngularSpeedRadPerSec());
+
+              Pose2d self = drive.getPose();
+
+              ChassisSpeeds currentFieldSpeeds =
+                  ChassisSpeeds.fromRobotRelativeSpeeds(
+                      drive.getChassisSpeeds(), drive.getRotation());
+
+              // ############ ROTATION AND TRANSLATION HOLDING ############
+              if (!robotRelativeSupplier.getAsBoolean()) {
+                if (Math.abs(omega) > DEADBAND && !useAsSetAngle) {
+                  drive.holdingAngle = HoldMode.OFF;
+                } else if (drive.holdingAngle == HoldMode.OFF
+                    && Math.abs(currentFieldSpeeds.omegaRadiansPerSecond) < MIN_HOLD_ROTATION) {
+
+                  drive.holdingAngle = HoldMode.HOLD;
+                  drive.targetAngle =
+                      useAsSetAngle
+                          ? Rotation2d.fromRadians(omegaSupplier.getAsDouble())
+                          : drive
+                              .getRotation()
+                              .plus(
+                                  Rotation2d.fromRadians(
+                                      currentFieldSpeeds.omegaRadiansPerSecond * LOOKAHEAD_Z));
+                  angleController.reset(
+                      self.getRotation().getRadians(), currentFieldSpeeds.omegaRadiansPerSecond);
+                }
+                if (drive.holdingAngle != HoldMode.OFF) {
+                  double pidTheta =
+                      angleController.calculate(
+                          self.getRotation().getRadians(), drive.targetAngle.getRadians());
+                  targetFieldSpeeds.omegaRadiansPerSecond = angleController.atGoal() ? 0 : pidTheta;
+                }
+
+                if ((Math.abs(x) < DEADBAND
+                        && Math.abs(currentFieldSpeeds.vxMetersPerSecond) < MIN_HOLD_VELOCITY)
+                    || useAsSetPosX) {
+                  if (!drive.holdingX) {
+                    drive.holdingX = true;
+                    drive.targetX =
+                        useAsSetPosX
+                            ? xSupplier.getAsDouble()
+                            : self.getX() + currentFieldSpeeds.vxMetersPerSecond * LOOKAHEAD_X;
+                    distanceControllerX.reset(self.getX(), currentFieldSpeeds.vxMetersPerSecond);
+                  }
+                  double pidX = distanceControllerX.calculate(self.getX(), drive.targetX);
+                  targetFieldSpeeds.vxMetersPerSecond = distanceControllerX.atGoal() ? 0 : pidX;
+                } else {
+                  drive.holdingX = false;
+                }
+                if ((Math.abs(y) < DEADBAND
+                        && Math.abs(currentFieldSpeeds.vyMetersPerSecond) < MIN_HOLD_VELOCITY)
+                    || useAsSetPosY) {
+                  if (!drive.holdingY) {
+                    drive.holdingY = true;
+                    drive.targetY =
+                        useAsSetPosY
+                            ? ySupplier.getAsDouble()
+                            : self.getY() + currentFieldSpeeds.vyMetersPerSecond * LOOKAHEAD_Y;
+                    distanceControllerY.reset(self.getY(), currentFieldSpeeds.vyMetersPerSecond);
+                  }
+                  double pidY = distanceControllerY.calculate(self.getY(), drive.targetY);
+                  targetFieldSpeeds.vyMetersPerSecond = distanceControllerY.atGoal() ? 0 : pidY;
+                } else {
+                  drive.holdingY = false;
+                }
+
+                targetFieldSpeeds =
+                    ChassisSpeeds.fromFieldRelativeSpeeds(targetFieldSpeeds, self.getRotation());
+              } else {
+                drive.holdingAngle = HoldMode.OFF;
+                drive.holdingX = false;
+                drive.holdingY = false;
+              }
+
+              if (drive.shake)
+                targetFieldSpeeds.vyMetersPerSecond +=
+                    SHAKE_AMPLITUDE * Math.sin(2.0 * Math.PI * SHAKE_FREQUENCY * timer.get());
+
+              drive.runVelocity(targetFieldSpeeds);
             },
             drive)
         .beforeStarting(
             () -> {
-              angleController.reset(drive.getRotation().getRadians());
+              ChassisSpeeds currentSpeeds =
+                  ChassisSpeeds.fromRobotRelativeSpeeds(
+                      drive.getChassisSpeeds(), drive.getRotation());
+
+              angleController.reset(
+                  drive.getRotation().getRadians(), currentSpeeds.omegaRadiansPerSecond);
+              distanceControllerX.reset(drive.getPose().getX(), currentSpeeds.vxMetersPerSecond);
+              distanceControllerY.reset(drive.getPose().getY(), currentSpeeds.vyMetersPerSecond);
+
               drive.resetHold();
+              timer.restart();
             });
   }
 
@@ -254,6 +307,7 @@ public class DriveCommands {
 
   /** Take a side-relative pose as target and drive to it */
   public static Command driveToPose(Drive drive, Pose2d target) {
+    Logger.recordOutput("drive/autoAlignPose", target);
     ProfiledPIDController angleController =
         new ProfiledPIDController(
             ANGLE_KP,

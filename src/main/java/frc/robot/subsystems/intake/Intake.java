@@ -2,7 +2,7 @@ package frc.robot.subsystems.intake;
 
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.wpilibj.Alert;
-import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -22,21 +22,9 @@ public class Intake extends SubsystemBase {
 
   public Intake(IntakeIO io) {
     this.io = io;
-    intakeDisconnectedAlert =
-        new Alert(
-            "Intake motor disconnected"
-                + (DriverStation.isFMSAttached() ? ". All hope is lost. " : ""),
-            Alert.AlertType.kError);
+    intakeDisconnectedAlert = new Alert("Intake motor disconnected", Alert.AlertType.kError);
     extendDisconnectedAlert =
-        new Alert(
-            "Intake extension motor disconnected"
-                + (DriverStation.isFMSAttached()
-                    ? " ___  _   _  _ ___ ___ \n"
-                        + "| _ \\/_\\ | \\| |_ _/ __|\n"
-                        + "|  _/ _ \\| .` || | (__ \n"
-                        + "|_|/_/ \\_\\_|\\_|___\\___|\n"
-                    : ""),
-            Alert.AlertType.kError);
+        new Alert("Intake extension motor disconnected", Alert.AlertType.kError);
   }
 
   public double getRealExtenderPosition() {
@@ -53,31 +41,59 @@ public class Intake extends SubsystemBase {
   }
 
   public Command intake() {
-    return Commands.runEnd(() -> io.intakeSpeed(60), () -> io.intakeSpeed(0), this);
+    return Commands.run(() -> io.intakeSpeed(100), this);
   }
 
   public Command intakeReverse() {
-    return Commands.runEnd(() -> io.intakeSpeed(-40), () -> io.intakeSpeed(0), this);
+    return Commands.run(() -> io.intakeSpeed(-40), this);
   }
 
   public Command intakeStop() {
     return Commands.run(() -> io.intakeSpeed(0), this);
   }
 
+  public Command shake() {
+    Timer time = new Timer();
+    boolean[] isMovingIn = {true};
+    return Commands.runEnd(
+            () -> {
+              if (isMovingIn[0]) {
+                io.extenderVelocity(-5);
+                if (time.hasElapsed(1.5)) {
+                  isMovingIn[0] = false;
+                  time.restart();
+                }
+              } else {
+                io.extenderVelocity(3);
+                if (time.hasElapsed(1)) {
+                  isMovingIn[0] = true;
+                  time.restart();
+                }
+              }
+            },
+            () -> io.extenderVelocity(0),
+            this)
+        .beforeStarting(
+            () -> {
+              isMovingIn[0] = true;
+              time.restart();
+            });
+  }
+
   public Command extendHopper() {
-    return Commands.run(() -> io.extenderPosition(extendedZeroPosition + 13.45), this);
+    return Commands.runOnce(() -> io.extenderPosition(extendedZeroPosition + 12.75), this);
   }
 
   public Command retractHopper() {
-    return Commands.run(() -> io.extenderPosition(extendedZeroPosition), this);
+    return Commands.runOnce(() -> io.extenderPosition(extendedZeroPosition), this);
   }
 
-  public Command extendHopperVelocity() {
-    return Commands.runEnd(() -> io.extenderVelocity(4), () -> io.extenderVelocity(0), this);
+  public Command extendHopperVelocity(double speed) {
+    return Commands.runEnd(() -> io.extenderVelocity(speed), () -> io.extenderVelocity(0), this);
   }
 
-  public Command retractHopperVelocity() {
-    return Commands.runEnd(() -> io.extenderVelocity(-5), () -> io.extenderVelocity(0), this);
+  public Command retractHopperVelocity(double speed) {
+    return Commands.runEnd(() -> io.extenderVelocity(-speed), () -> io.extenderVelocity(0), this);
   }
 
   public Command retractStop() {

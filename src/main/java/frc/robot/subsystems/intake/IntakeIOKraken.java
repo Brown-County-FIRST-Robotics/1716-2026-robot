@@ -10,6 +10,7 @@ import com.ctre.phoenix6.configs.Slot1Configs;
 import com.ctre.phoenix6.configs.Slot2Configs;
 import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -27,7 +28,8 @@ public class IntakeIOKraken implements IntakeIO {
   StatusSignal<Current> intakeCurrent;
   StatusSignal<Voltage> intakeAppliedVolts;
   StatusSignal<AngularVelocity> extendVelocity;
-  StatusSignal<Current> extendCurrent;
+  StatusSignal<Current> extendStatorCurrent;
+  StatusSignal<Current> extendInputCurrent;
   StatusSignal<Voltage> extendAppliedVolts;
 
   public IntakeIOKraken(int intakeID, int extendID) {
@@ -38,8 +40,10 @@ public class IntakeIOKraken implements IntakeIO {
     intakeCurrent.setUpdateFrequency(50);
     intakeAppliedVolts = intakeMotor.getMotorVoltage();
     extendVelocity = extendMotor.getVelocity();
-    extendCurrent = extendMotor.getStatorCurrent();
-    extendCurrent.setUpdateFrequency(50);
+    extendStatorCurrent = extendMotor.getStatorCurrent();
+    extendStatorCurrent.setUpdateFrequency(50);
+    extendInputCurrent = extendMotor.getSupplyCurrent();
+    extendInputCurrent.setUpdateFrequency(50);
     extendAppliedVolts = extendMotor.getMotorVoltage();
     var extend_cfgr = extendMotor.getConfigurator();
 
@@ -76,7 +80,8 @@ public class IntakeIOKraken implements IntakeIO {
     var intakeStatus =
         BaseStatusSignal.refreshAll(intakeCurrent, intakeAppliedVolts, intakeVelocity);
     var extendStatus =
-        BaseStatusSignal.refreshAll(extendCurrent, extendAppliedVolts, extendVelocity);
+        BaseStatusSignal.refreshAll(
+            extendStatorCurrent, extendAppliedVolts, extendVelocity, extendInputCurrent);
 
     inputs.intakeVelocity = intakeVelocity.getValue().in(Units.RotationsPerSecond);
     inputs.extendConnected = extendStatus.isOK();
@@ -86,7 +91,8 @@ public class IntakeIOKraken implements IntakeIO {
     inputs.extendVelocity = extendVelocity.getValue().in(Units.RotationsPerSecond);
     inputs.intakeConnected = intakeStatus.isOK();
     inputs.extendAppliedVolts = extendAppliedVolts.getValueAsDouble();
-    inputs.extendAppliedCurrent = extendCurrent.getValueAsDouble();
+    inputs.extendAppliedCurrent = extendStatorCurrent.getValueAsDouble();
+    inputs.extendInputCurrent = extendInputCurrent.getValueAsDouble();
 
     inputs.extendPosition = extendMotor.getPosition().getValueAsDouble();
   }
@@ -109,5 +115,10 @@ public class IntakeIOKraken implements IntakeIO {
     if (rps == 0) extendMotor.setControl(new VelocityVoltage(rps).withSlot(2));
     else if (rps < 0) extendMotor.setControl(new VelocityVoltage(rps).withSlot(0));
     else extendMotor.setControl(new VelocityVoltage(rps).withSlot(1));
+  }
+
+  @Override
+  public void extenderCurrent(double amps) {
+    extendMotor.setControl(new TorqueCurrentFOC(amps));
   }
 }

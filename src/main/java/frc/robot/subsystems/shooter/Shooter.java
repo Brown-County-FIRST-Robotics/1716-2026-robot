@@ -1,24 +1,50 @@
 package frc.robot.subsystems.shooter;
 
 import edu.wpi.first.math.Pair;
+import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
+import frc.robot.OurConstants;
 import org.littletonrobotics.junction.Logger;
 
 public class Shooter extends SubsystemBase {
   double abs_rel_turret_offset = 0.0;
   Rotation2d hoodAngle = Rotation2d.kZero;
   private static final double hoodLegLength1 = 4.87;
-  private static final double hoodLegLength2 = 8.20;
-  private static final double hoodZero = Math.asin(1.75 / 9);
+  private static final double hoodLegLength2 = 8.29;
+  private static final double hoodZero = 0.221 + (0.221 - 0.02) + 0.02 - 0.738;
   ShooterIOInputsAutoLogged inputs = new ShooterIOInputsAutoLogged();
   ShooterIO shooterIO;
   TurretIO turretIO;
   TurretIOInputsAutoLogged turretInputs = new TurretIOInputsAutoLogged();
+
+  private final Debouncer shooterConnectedDebouncer =
+      new Debouncer(OurConstants.CONNECTED_DEBOUNCE_TIME, Debouncer.DebounceType.kFalling);
+  private final Debouncer turretConnectedDebouncer =
+      new Debouncer(OurConstants.CONNECTED_DEBOUNCE_TIME, Debouncer.DebounceType.kFalling);
+  private final Debouncer encoderAConnectedDebouncer =
+      new Debouncer(OurConstants.CONNECTED_DEBOUNCE_TIME, Debouncer.DebounceType.kFalling);
+  private final Debouncer encoderBConnectedDebouncer =
+      new Debouncer(OurConstants.CONNECTED_DEBOUNCE_TIME, Debouncer.DebounceType.kFalling);
+  private final Alert shooterDisconnectedAlert =
+      new Alert("Shooter motor disconnected", AlertType.kError);
+  private final Alert turretDisconnectedAlert =
+      new Alert("Turret (turn) motor disconnected", AlertType.kError);
+  private final Alert encoderADisconnectedAlert =
+      new Alert("Turret encoder A (11 tooth) disconnected", AlertType.kError);
+  private final Alert encoderBDisconnectedAlert =
+      new Alert("Turret encoder B (13 tooth) disconnected", AlertType.kError);
 
   public Rotation2d getTurretRotation() {
     return turret_rotation;
@@ -51,6 +77,15 @@ public class Shooter extends SubsystemBase {
         fuseEncoders(turretInputs.encoder_a_position, turretInputs.encoder_b_position);
     Logger.recordOutput("turret/absoluteRotation", turret_rotation);
     turret_rotation = Rotation2d.fromRadians(wdmod(turret_rotation.getRadians()));
+    Logger.recordOutput("hood", forwardKinematics(inputs.shooterHoodPosition));
+
+    // Handle disconnection alerts
+    shooterDisconnectedAlert.set(!shooterConnectedDebouncer.calculate(inputs.connected));
+    turretDisconnectedAlert.set(!turretConnectedDebouncer.calculate(turretInputs.motorConnected));
+    encoderADisconnectedAlert.set(
+        !encoderAConnectedDebouncer.calculate(turretInputs.encoderAConnected));
+    encoderBDisconnectedAlert.set(
+        !encoderBConnectedDebouncer.calculate(turretInputs.encoderBConnected));
   }
 
   public Command fireCommand() {
@@ -62,25 +97,66 @@ public class Shooter extends SubsystemBase {
     if (position < 0) position += 1;
     position =
         Math.min(
-            0.221545 - SOFT_LIMIT_BUFFER,
-            Math.max(0.191816 + SOFT_LIMIT_BUFFER, position)); // Clamp to hardware limits
+            0.656148083885 - SOFT_LIMIT_BUFFER,
+            Math.max(0.193516495305 + SOFT_LIMIT_BUFFER, position)); // Clamp to hardware limits
     Logger.recordOutput("turret/setAbsolutePosition", position);
     turretIO.commandPosition(
         (Rotation2d.fromRotations(position).minus(turret_rotation)).getRotations()
             + turretInputs.position);
   }
 
-  public Rotation2d getRotationToHub(Pose2d robot) {
-    var hubPosition = FieldConstants.hub();
-    return hubPosition
-        .toTranslation2d()
-        .minus(robot.plus(new Transform2d(-0.2, 0.3, Rotation2d.kZero)).getTranslation())
-        .getAngle();
+  public Translation2d getTurretTarget(Pose2d robot) {
+    double distanceToCenter =
+        Math.abs(8.270494 - robot.getX()); // Distance taken on the X axis (the long way)
+    double distanceToMidline =
+        4.034536 - robot.getY(); // Distance taken on the Y axis (the short way)
+    // positive means human player side
+
+    boolean isFlipped =
+        DriverStation.getAlliance().isPresent()
+            && DriverStation.getAlliance().get() == Alliance.Red;
+
+    Translation2d targetPosition;
+    if (distanceToCenter > 3.6449) targetPosition = FieldConstants.hub().toTranslation2d();
+    else if (distanceToMidline > 0)
+      targetPosition = new Translation2d(isFlipped ? 16.54099 - 2 : 2, 1.5);
+    else targetPosition = new Translation2d(isFlipped ? 16.54099 - 2 : 2, 8.069275 - 1.5);
+    Logger.recordOutput(
+        "turret/autoAimPos",
+        new Pose2d(targetPosition.getX(), targetPosition.getY(), Rotation2d.kZero));
+    return targetPosition.minus(
+        robot.plus(new Transform2d(-0.2, 0.3, Rotation2d.kZero)).getTranslation());
   }
 
   public void commandTurretToTrack(Pose2d p2) {
-    var correctRotation = getRotationToHub(p2).minus(p2.getRotation());
+    var correctRotation = getTurretTarget(p2).getAngle().minus(p2.getRotation());
     commandTurret(correctRotation);
+  }
+
+  public void trackBothToShoot(Pose2d p2, ChassisSpeeds speeds) {
+    double distanceToTarget = getTurretTarget(p2).getNorm();
+    double airTime = distanceToTarget / 2.5;
+    p2 = p2.exp(speeds.toTwist2d(airTime));
+
+    Logger.recordOutput("turret/autoAimRobotPosVelocityAdjusted", p2);
+
+    commandTurretToTrack(p2);
+    commandHoodToTrack(p2);
+  }
+
+  public void commandHoodToTrack(Pose2d p2) {
+    double distanceToTarget = Units.metersToInches(getTurretTarget(p2).getNorm());
+    double target = distanceToTarget * 0.0095 + 0.063;
+    /* Collected data on 3/31/26
+    Distance from edge of hub to edge of bumper
+      60": 0.73
+      50": 0.65
+      40": 0.54
+    */
+
+    target = Math.max(0, Math.min(2, target));
+
+    shooterIO.commandHoodPosition(target);
   }
 
   // Turret, shooter
@@ -89,7 +165,7 @@ public class Shooter extends SubsystemBase {
     var groundDistanceToHub =
         currentPose.getTranslation().minus(hubPosition.toTranslation2d()).getNorm();
     var heightDifference = hubPosition.getZ() - 0.4;
-    var exitVelocity = 5;
+    var exitVelocity = 8;
     var gravity = 9.81;
     var theta =
         Math.atan(
@@ -119,17 +195,19 @@ public class Shooter extends SubsystemBase {
     double numOf100Teeth =
         bGearRotations * 13 + bNumOfTeeth; // How many teeth the 100 gear has rotated
     // Fix because the turret is currently rotated by +1 rotation
-    numOf100Teeth = (numOf100Teeth - 100 + 143) % 143;
+    numOf100Teeth = (numOf100Teeth + 200 + 143) % 143;
+    Logger.recordOutput("turret/encoderEstNumOfTeeth", numOf100Teeth);
     double rotationInRadians = numOf100Teeth / 100 * (2 * Math.PI); // convert to radians
-    return Rotation2d.fromRadians(rotationInRadians + (Math.PI) - 1.87);
+    return Rotation2d.fromRadians(rotationInRadians + (Math.PI) - 2.73);
   }
 
   // both of the next functions together are just the law of cosines, bc it is a literal triangle
   private static double inverseKinematics(Rotation2d angle) {
     return Math.sqrt(
-        hoodLegLength1 * hoodLegLength1
-            + hoodLegLength2 * hoodLegLength2
-            - 2.0 * hoodLegLength1 * hoodLegLength2 * Math.cos(angle.getRadians() - hoodZero));
+            hoodLegLength1 * hoodLegLength1
+                + hoodLegLength2 * hoodLegLength2
+                - 2.0 * hoodLegLength1 * hoodLegLength2 * Math.cos(angle.getRadians() - hoodZero))
+        - 4.63;
   }
 
   private static Rotation2d forwardKinematics(double length) {
@@ -138,7 +216,7 @@ public class Shooter extends SubsystemBase {
             + Math.acos(
                 (hoodLegLength1 * hoodLegLength1
                         + hoodLegLength2 * hoodLegLength2
-                        - length * length)
+                        - (length + 4.63) * (length + 4.63))
                     / (2.0 * hoodLegLength1 * hoodLegLength2)));
   }
 
