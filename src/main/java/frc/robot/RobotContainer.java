@@ -84,9 +84,9 @@ class MirroredAutoInfo {
     return Commands.waitSeconds(intakeWaitSeconds)
         .andThen(
             intake
-                .extendHopper()
-                .andThen(Commands.waitSeconds(1.0))
-                .andThen(intake.intake().withTimeout(shootWaitSeconds - intakeWaitSeconds - 1))
+                .extendHopperVelocity(3)
+                .raceWith(Commands.waitSeconds(2.5))
+                .andThen(intake.intake().withTimeout(shootWaitSeconds - intakeWaitSeconds - 2.5))
                 .andThen(
                     Commands.runOnce(
                             () -> {
@@ -409,7 +409,8 @@ public class RobotContainer extends PeriodicRunnable {
                         },
                         true,
                         () -> {
-                          return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
+                          return controlPanel.questDown().getAsBoolean()
+                              || controller.rightStick().getAsBoolean();
                         },
                         () -> false),
                 Set.of(drive)));
@@ -436,7 +437,8 @@ public class RobotContainer extends PeriodicRunnable {
                         },
                         true,
                         () -> {
-                          return opcon.a().getAsBoolean() || controller.rightStick().getAsBoolean();
+                          return controlPanel.questDown().getAsBoolean()
+                              || controller.rightStick().getAsBoolean();
                         },
                         () -> false),
                 Set.of(drive)));
@@ -471,6 +473,7 @@ public class RobotContainer extends PeriodicRunnable {
 
     // Reset initial pos on auto init
     RobotModeTriggers.autonomous()
+        .or(controller.leftStick())
         .onTrue(Commands.runOnce(() -> drive.setPose(FieldConstants.flip(initPosChooser.get()))));
 
     RobotModeTriggers.disabled().onFalse(Commands.runOnce(drive::resetHold));
@@ -492,12 +495,12 @@ public class RobotContainer extends PeriodicRunnable {
                       shooter.setShooterSpeed(80);
                       rollers.setSpeeds(0, 0, -20);
                     })
-                // .alongWith()
+                .alongWith(DriveCommands.shake(drive))
                 .alongWith(
                     controlPanel.shakeIntake().getAsBoolean() ? Commands.none() : intake.shake())
                 .alongWith(
                     Commands.waitSeconds(0.4)
-                        .andThen(Commands.run(() -> rollers.setSpeeds(40, 20, 40), rollers)))
+                        .andThen(Commands.run(() -> rollers.setSpeeds(80, 20, 40), rollers)))
                 .alongWith(
                     Commands.race(
                             Commands.run(() -> controller.setRumble(RumbleType.kRightRumble, 0.5)),
