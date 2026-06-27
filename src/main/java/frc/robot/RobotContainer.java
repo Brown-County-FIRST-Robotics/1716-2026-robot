@@ -85,8 +85,8 @@ class MirroredAutoInfo {
         .andThen(
             intake
                 .extendHopperVelocity(3)
-                .andThen(Commands.waitSeconds(1.0))
-                .andThen(intake.intake().withTimeout(shootWaitSeconds - intakeWaitSeconds - 1))
+                .raceWith(Commands.waitSeconds(2.5))
+                .andThen(intake.intake().withTimeout(shootWaitSeconds - intakeWaitSeconds - 2.5))
                 .andThen(
                     Commands.runOnce(
                             () -> {
