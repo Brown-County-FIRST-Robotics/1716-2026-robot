@@ -36,6 +36,7 @@ public class ButtonBox {
       disconnectedAlert.set(true);
       return dash.get(ind).get();
     }
+    disconnectedAlert.set(false);
     int digital_outputs = 21;
     int pov_bits = 3;
     int analog_bits = 8;
