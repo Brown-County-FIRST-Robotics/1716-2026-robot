@@ -8,6 +8,8 @@
 package frc.robot;
 
 import edu.wpi.first.hal.HALUtil;
+import edu.wpi.first.wpilibj.AddressableLED;
+import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -31,6 +33,7 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
  */
 public class Robot extends LoggedRobot {
   private Command autonomousCommand;
+  AddressableLED adled = new AddressableLED(8);
   private RobotContainer robotContainer;
 
   public Robot() {
@@ -91,11 +94,20 @@ public class Robot extends LoggedRobot {
     // Instantiate our RobotContainer. This will perform all our button bindings,
     // and put our autonomous chooser on the dashboard.
     robotContainer = new RobotContainer();
+    adled.setLength(20);
   }
 
   /** This function is called periodically during all modes. */
   @Override
   public void robotPeriodic() {
+
+    var adbuf = new AddressableLEDBuffer(20);
+    adbuf.setRGB(0, 163, 2, 98);
+    adbuf.setRGB(1, 163, 2, 98);
+    adbuf.setRGB(2, 163, 2, 98);
+    adbuf.setRGB(3, 163, 2, 98);
+    adled.setData(adbuf);
+    adled.start();
     // Optionally switch the thread to high priority to improve loop
     // timing (see the template project documentation for details)
     // Threads.setCurrentThreadPriority(true, 99);
